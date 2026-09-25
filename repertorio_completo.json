@@ -1,0 +1,2485 @@
+[
+  {
+    "title": "Linha do Equador",
+    "composer": "Djavan",
+    "genre": "MPB",
+    "original_key": "A",
+    "mastery_level": 3,
+    "representatives": [
+      "Geral"
+    ]
+  },
+  {
+    "title": "Flor de Lis",
+    "composer": "Djavan",
+    "genre": "Samba / MPB",
+    "original_key": "F",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Capim",
+    "composer": "Djavan",
+    "genre": "MPB",
+    "original_key": "C",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Jogral",
+    "composer": "Djavan",
+    "genre": "MPB",
+    "original_key": "G",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Alagoas",
+    "composer": "Djavan",
+    "genre": "MPB",
+    "original_key": "A",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Beiral",
+    "composer": "Djavan",
+    "genre": "MPB",
+    "original_key": "F",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Lei",
+    "composer": "Djavan",
+    "genre": "MPB",
+    "original_key": "C",
+    "mastery_level": 2,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Azul",
+    "composer": "Djavan",
+    "genre": "MPB",
+    "original_key": "Dm",
+    "mastery_level": 3,
+    "representatives": [
+      "Sophia",
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "Samurai",
+    "composer": "Djavan",
+    "genre": "Soul / MPB",
+    "original_key": "E",
+    "mastery_level": 3,
+    "representatives": [
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Asa",
+    "composer": "Djavan",
+    "genre": "MPB",
+    "original_key": "Dm",
+    "mastery_level": 3,
+    "representatives": [
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Lilás",
+    "composer": "Djavan",
+    "genre": "Pop / MPB",
+    "original_key": "Am",
+    "mastery_level": 3,
+    "representatives": [
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Isn't She Lovely",
+    "composer": "Stevie Wonder",
+    "genre": "Soul / Pop",
+    "original_key": "E",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "My Cherie Amour",
+    "composer": "Stevie Wonder",
+    "genre": "Soul / Ballad",
+    "original_key": "F",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Don't You Worry 'bout a Thing",
+    "composer": "Stevie Wonder",
+    "genre": "Latin Soul / Funk",
+    "original_key": "Ebm",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "You Are the Sunshine of My Life",
+    "composer": "Stevie Wonder",
+    "genre": "Soul / Bossa",
+    "original_key": "B",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Ribbon in the Sky",
+    "composer": "Stevie Wonder",
+    "genre": "Soul / Ballad",
+    "original_key": "C#m",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "For Once in My Life",
+    "composer": "Stevie Wonder",
+    "genre": "Motown / Soul",
+    "original_key": "C",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Overjoyed",
+    "composer": "Stevie Wonder",
+    "genre": "Soul / Ballad",
+    "original_key": "C",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Lately",
+    "composer": "Stevie Wonder",
+    "genre": "Ballad",
+    "original_key": "G",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "I Just Called to Say I Love You",
+    "composer": "Stevie Wonder",
+    "genre": "Pop / Ballad",
+    "original_key": "Db",
+    "mastery_level": 4,
+    "representatives": [
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "For Your Love",
+    "composer": "Stevie Wonder",
+    "genre": "R&B / Soul",
+    "original_key": "A",
+    "mastery_level": 2,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Send One Your Love",
+    "composer": "Stevie Wonder",
+    "genre": "Soul / Jazz",
+    "original_key": "A",
+    "mastery_level": 2,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Moon Blue",
+    "composer": "Stevie Wonder",
+    "genre": "Jazz Waltz",
+    "original_key": "Dm",
+    "mastery_level": 2,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Do I Do",
+    "composer": "Stevie Wonder",
+    "genre": "Funk / Soul",
+    "original_key": "B",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Corcovado",
+    "composer": "Tom Jobim",
+    "genre": "Bossa Nova",
+    "original_key": "Am",
+    "mastery_level": 5,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe",
+      "Sophia",
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "Wave",
+    "composer": "Tom Jobim",
+    "genre": "Bossa Nova",
+    "original_key": "D",
+    "mastery_level": 5,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe",
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Garota de Ipanema",
+    "composer": "Tom Jobim",
+    "genre": "Bossa Nova",
+    "original_key": "F",
+    "mastery_level": 5,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Dindi",
+    "composer": "Tom Jobim",
+    "genre": "Bossa Nova",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe",
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Água de beber",
+    "composer": "Tom Jobim",
+    "genre": "Bossa Nova",
+    "original_key": "Bm",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Samba de uma nota só",
+    "composer": "Tom Jobim",
+    "genre": "Bossa Nova",
+    "original_key": "G",
+    "mastery_level": 5,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe",
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Chega de Saudade",
+    "composer": "Tom Jobim",
+    "genre": "Bossa Nova",
+    "original_key": "Dm",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe",
+      "TAO Trio"
+    ]
+  },
+  {
+    "title": "Águas de Março",
+    "composer": "Tom Jobim",
+    "genre": "Bossa Nova",
+    "original_key": "Bb",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Anos Dourados",
+    "composer": "Tom Jobim",
+    "genre": "Bossa Nova",
+    "original_key": "G",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Caminhos Cruzados",
+    "composer": "Tom Jobim",
+    "genre": "Bossa Nova",
+    "original_key": "A",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Esse seu olhar",
+    "composer": "Tom Jobim",
+    "genre": "Bossa Nova",
+    "original_key": "F",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Ligia",
+    "composer": "Tom Jobim",
+    "genre": "Bossa Nova",
+    "original_key": "G",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Desafinado",
+    "composer": "Tom Jobim",
+    "genre": "Bossa Nova",
+    "original_key": "F",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Eu sei que vou te amar",
+    "composer": "Tom Jobim",
+    "genre": "Bossa Nova",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Chovendo na roseira",
+    "composer": "Tom Jobim",
+    "genre": "Bossa Nova",
+    "original_key": "A",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Você e eu",
+    "composer": "Carlos Lyra / Vinicius de Moraes",
+    "genre": "Bossa Nova",
+    "original_key": "D",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Ela é carioca",
+    "composer": "Tom Jobim",
+    "genre": "Bossa Nova",
+    "original_key": "D",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Brigas nunca mais",
+    "composer": "Tom Jobim / Vinicius de Moraes",
+    "genre": "Bossa Nova",
+    "original_key": "Bb",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Só Danço Samba",
+    "composer": "Tom Jobim / Vinicius de Moraes",
+    "genre": "Bossa Nova",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Triste",
+    "composer": "Tom Jobim",
+    "genre": "Bossa Nova",
+    "original_key": "G",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Sophia",
+      "TAO Trio"
+    ]
+  },
+  {
+    "title": "Samba de Verão",
+    "composer": "Marcos Valle",
+    "genre": "Bossa Nova",
+    "original_key": "D",
+    "mastery_level": 5,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe",
+      "Sophia"
+    ]
+  },
+  {
+    "title": "O pato",
+    "composer": "Jayme Silva / Neuza Teixeira",
+    "genre": "Bossa Nova",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Doralice",
+    "composer": "Dorival Caymmi",
+    "genre": "Bossa Nova",
+    "original_key": "G",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Lobo bobo",
+    "composer": "Carlos Lyra / Ronaldo Bôscoli",
+    "genre": "Bossa Nova",
+    "original_key": "D",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Batida diferente",
+    "composer": "Durval Ferreira / Maurício Einhorn",
+    "genre": "Bossa Nova",
+    "original_key": "G",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Fotografia",
+    "composer": "Tom Jobim",
+    "genre": "Bossa Nova",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Aos pés da Cruz",
+    "composer": "Marino Pinto / Zé da Zilda",
+    "genre": "Samba",
+    "original_key": "G",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "O barquinho",
+    "composer": "Roberto Menescal / Ronaldo Bôscoli",
+    "genre": "Bossa Nova",
+    "original_key": "F",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Eu e a Brisa",
+    "composer": "Johnny Alf",
+    "genre": "Bossa Nova",
+    "original_key": "Eb",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Manhã de Carnaval",
+    "composer": "Luiz Bonfá / Antônio Maria",
+    "genre": "Bossa Nova",
+    "original_key": "Am",
+    "mastery_level": 4,
+    "representatives": [
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "Onde Anda Você",
+    "composer": "Vinicius de Moraes / Hermano Silva",
+    "genre": "Bossa Nova",
+    "original_key": "Dm",
+    "mastery_level": 4,
+    "representatives": [
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "Humpty Dumpty",
+    "composer": "Chick Corea",
+    "genre": "Modern Jazz",
+    "original_key": "Bb",
+    "mastery_level": 3,
+    "representatives": [
+      "TAO Trio"
+    ]
+  },
+  {
+    "title": "Bite",
+    "composer": "Autoral / Instrumental",
+    "genre": "Fusion",
+    "original_key": "Am",
+    "mastery_level": 3,
+    "representatives": [
+      "TAO Trio"
+    ]
+  },
+  {
+    "title": "Milonga gris",
+    "composer": "Carlos Aguirre",
+    "genre": "Música Instrumental Sul-Americana",
+    "original_key": "Dm",
+    "mastery_level": 3,
+    "representatives": [
+      "TAO Trio"
+    ]
+  },
+  {
+    "title": "Solfeggietto",
+    "composer": "C.P.E. Bach / Jazz Arr.",
+    "genre": "Crossover Jazz",
+    "original_key": "Cm",
+    "mastery_level": 3,
+    "representatives": [
+      "TAO Trio"
+    ]
+  },
+  {
+    "title": "Frevo",
+    "composer": "Egberto Gismonti",
+    "genre": "Música Instrumental Brasileira",
+    "original_key": "Am",
+    "mastery_level": 3,
+    "representatives": [
+      "TAO Trio"
+    ]
+  },
+  {
+    "title": "Loro",
+    "composer": "Egberto Gismonti",
+    "genre": "Música Instrumental Brasileira",
+    "original_key": "A",
+    "mastery_level": 3,
+    "representatives": [
+      "TAO Trio"
+    ]
+  },
+  {
+    "title": "Alone Together",
+    "composer": "Arthur Schwartz",
+    "genre": "Jazz Standard",
+    "original_key": "Dm",
+    "mastery_level": 4,
+    "representatives": [
+      "TAO Trio"
+    ]
+  },
+  {
+    "title": "Stella by Starlight",
+    "composer": "Victor Young",
+    "genre": "Jazz Standard",
+    "original_key": "Bb",
+    "mastery_level": 4,
+    "representatives": [
+      "TAO Trio"
+    ]
+  },
+  {
+    "title": "Solar",
+    "composer": "Miles Davis",
+    "genre": "Jazz Standard / Bebop",
+    "original_key": "Cm",
+    "mastery_level": 4,
+    "representatives": [
+      "TAO Trio"
+    ]
+  },
+  {
+    "title": "Billie's Bounce",
+    "composer": "Charlie Parker",
+    "genre": "Bebop Blues",
+    "original_key": "F",
+    "mastery_level": 4,
+    "representatives": [
+      "TAO Trio"
+    ]
+  },
+  {
+    "title": "Moment's Notice",
+    "composer": "John Coltrane",
+    "genre": "Hard Bop",
+    "original_key": "Eb",
+    "mastery_level": 3,
+    "representatives": [
+      "TAO Trio"
+    ]
+  },
+  {
+    "title": "Oleo",
+    "composer": "Sonny Rollins",
+    "genre": "Bebop / Rhythm Changes",
+    "original_key": "Bb",
+    "mastery_level": 4,
+    "representatives": [
+      "TAO Trio"
+    ]
+  },
+  {
+    "title": "On Green Dolphin Street",
+    "composer": "Bronislau Kaper",
+    "genre": "Jazz Standard",
+    "original_key": "Eb",
+    "mastery_level": 4,
+    "representatives": [
+      "TAO Trio"
+    ]
+  },
+  {
+    "title": "Giant Steps",
+    "composer": "John Coltrane",
+    "genre": "Hard Bop / Coltrane Changes",
+    "original_key": "B",
+    "mastery_level": 3,
+    "representatives": [
+      "TAO Trio"
+    ]
+  },
+  {
+    "title": "Madalena",
+    "composer": "Ivan Lins",
+    "genre": "Samba / MPB",
+    "original_key": "D",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Ai Ai Ai Ai Ai Ai",
+    "composer": "Ivan Lins",
+    "genre": "MPB",
+    "original_key": "G",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Lembra de mim",
+    "composer": "Ivan Lins",
+    "genre": "MPB",
+    "original_key": "D",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Vitoriosa",
+    "composer": "Ivan Lins",
+    "genre": "MPB",
+    "original_key": "G",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Daquilo que eu sei",
+    "composer": "Ivan Lins",
+    "genre": "MPB",
+    "original_key": "D",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Desesperar Jamais",
+    "composer": "Ivan Lins",
+    "genre": "MPB",
+    "original_key": "D",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Drão",
+    "composer": "Gilberto Gil",
+    "genre": "MPB",
+    "original_key": "G",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Ladeira da Preguiça",
+    "composer": "Gilberto Gil",
+    "genre": "Samba / MPB",
+    "original_key": "C",
+    "mastery_level": 3,
+    "representatives": [
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Palco",
+    "composer": "Gilberto Gil",
+    "genre": "Funk / MPB",
+    "original_key": "G",
+    "mastery_level": 4,
+    "representatives": [
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Aquele abraço",
+    "composer": "Gilberto Gil",
+    "genre": "Samba / MPB",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Travessia",
+    "composer": "Milton Nascimento",
+    "genre": "Clube da Esquina / MPB",
+    "original_key": "E",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Resposta ao tempo",
+    "composer": "Cristóvão Bastos / Aldir Blanc",
+    "genre": "MPB",
+    "original_key": "Fm",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Canto de Ossanha",
+    "composer": "Baden Powell / Vinicius de Moraes",
+    "genre": "Afro-Samba",
+    "original_key": "Dm",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe",
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "Caí dentro",
+    "composer": "Baden Powell / Paulo César Pinheiro",
+    "genre": "Samba",
+    "original_key": "G",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Corrida de Jangada",
+    "composer": "Edu Lobo",
+    "genre": "MPB",
+    "original_key": "D",
+    "mastery_level": 3,
+    "representatives": [
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Bala com bala",
+    "composer": "João Bosco / Aldir Blanc",
+    "genre": "Samba / MPB",
+    "original_key": "G",
+    "mastery_level": 3,
+    "representatives": [
+      "Sophia"
+    ]
+  },
+  {
+    "title": "O bêbado e a equilibrista",
+    "composer": "João Bosco / Aldir Blanc",
+    "genre": "MPB",
+    "original_key": "E",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Como nossos pais",
+    "composer": "Belchior",
+    "genre": "MPB",
+    "original_key": "D",
+    "mastery_level": 4,
+    "representatives": [
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Aprendendo a jogar",
+    "composer": "Guilherme Arantes",
+    "genre": "Pop / MPB",
+    "original_key": "Bm",
+    "mastery_level": 3,
+    "representatives": [
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Força estranha",
+    "composer": "Caetano Veloso",
+    "genre": "MPB",
+    "original_key": "D",
+    "mastery_level": 4,
+    "representatives": [
+      "Sophia"
+    ]
+  },
+  {
+    "title": "A Voz do Morro",
+    "composer": "Zé Kéti",
+    "genre": "Samba Tradicional",
+    "original_key": "Eb",
+    "mastery_level": 4,
+    "representatives": [
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Lindo lago do amor",
+    "composer": "Gonzaguinha",
+    "genre": "MPB",
+    "original_key": "Bm",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Não Quero Dinheiro",
+    "composer": "Tim Maia",
+    "genre": "Soul / Funk",
+    "original_key": "D",
+    "mastery_level": 5,
+    "representatives": [
+      "Sophia"
+    ]
+  },
+  {
+    "title": "Descobridor dos Sete Mares",
+    "composer": "Michel / Gilson Mendonça (Tim Maia)",
+    "genre": "Soul / Pop",
+    "original_key": "G",
+    "mastery_level": 4,
+    "representatives": [
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "Ela Partiu",
+    "composer": "Tim Maia",
+    "genre": "Soul",
+    "original_key": "D",
+    "mastery_level": 4,
+    "representatives": [
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "Olhos Coloridos",
+    "composer": "Macau (Sandra de Sá)",
+    "genre": "Soul / Funk",
+    "original_key": "A",
+    "mastery_level": 4,
+    "representatives": [
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "Sex Machine",
+    "composer": "James Brown",
+    "genre": "Funk",
+    "original_key": "Eb",
+    "mastery_level": 4,
+    "representatives": [
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "I Feel Good",
+    "composer": "James Brown",
+    "genre": "Funk / R&B",
+    "original_key": "D",
+    "mastery_level": 4,
+    "representatives": [
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "Tutti Frutti",
+    "composer": "Little Richard",
+    "genre": "Rock and Roll",
+    "original_key": "F",
+    "mastery_level": 4,
+    "representatives": [
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "How Deep Is Your Love",
+    "composer": "Bee Gees",
+    "genre": "Pop / Ballad",
+    "original_key": "Eb",
+    "mastery_level": 4,
+    "representatives": [
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "Can't Take My Eyes Off You",
+    "composer": "Bob Crewe / Bob Gaudio",
+    "genre": "Pop / Soul",
+    "original_key": "G",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "Killing Me Softly",
+    "composer": "Charles Fox / Norman Gimbel",
+    "genre": "Soul / Ballad",
+    "original_key": "Em",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "O Que Dizem Seus Olhos",
+    "composer": "Dio Santos",
+    "genre": "MPB / Balada",
+    "original_key": "D",
+    "mastery_level": 3,
+    "representatives": [
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "As Canções Que Você Fez Pra Mim",
+    "composer": "Roberto Carlos / Erasmo Carlos",
+    "genre": "MPB / Balada",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "Nosso Estranho Amor",
+    "composer": "Caetano Veloso",
+    "genre": "MPB",
+    "original_key": "D",
+    "mastery_level": 3,
+    "representatives": [
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "Dos Gardenias",
+    "composer": "Isolina Carrillo",
+    "genre": "Bolero",
+    "original_key": "Dm",
+    "mastery_level": 3,
+    "representatives": [
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "A Mi Manera",
+    "composer": "Claude François / Jacques Revaux",
+    "genre": "Bolero / Balada",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "What a Wonderful World",
+    "composer": "Bob Thiele / George David Weiss",
+    "genre": "Ballad / Standard",
+    "original_key": "F",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe",
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "País Tropical",
+    "composer": "Jorge Ben Jor",
+    "genre": "Samba Rock",
+    "original_key": "G",
+    "mastery_level": 5,
+    "representatives": [
+      "Arthur Felipe",
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "Fly Me to the Moon",
+    "composer": "Bart Howard",
+    "genre": "Jazz Standard",
+    "original_key": "Am",
+    "mastery_level": 5,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe",
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "The Way You Look Tonight",
+    "composer": "Jerome Kern",
+    "genre": "Jazz Standard",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe",
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "Stand by Me",
+    "composer": "Ben E. King",
+    "genre": "Soul / Classic",
+    "original_key": "A",
+    "mastery_level": 5,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe",
+      "Dio Santos"
+    ]
+  },
+  {
+    "title": "All of Me",
+    "composer": "Gerald Marks / Seymour Simons",
+    "genre": "Jazz Standard",
+    "original_key": "C",
+    "mastery_level": 5,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Autumn Leaves",
+    "composer": "Joseph Kosma",
+    "genre": "Jazz Standard",
+    "original_key": "Em",
+    "mastery_level": 5,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "All the Things You Are",
+    "composer": "Jerome Kern",
+    "genre": "Jazz Standard",
+    "original_key": "Ab",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Cheek to Cheek",
+    "composer": "Irving Berlin",
+    "genre": "Jazz Standard",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Misty",
+    "composer": "Erroll Garner",
+    "genre": "Jazz Ballad",
+    "original_key": "Eb",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Night and Day",
+    "composer": "Cole Porter",
+    "genre": "Jazz Standard",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Blue Moon",
+    "composer": "Richard Rodgers",
+    "genre": "Jazz Standard",
+    "original_key": "Eb",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Dream a Little Dream of Me",
+    "composer": "Fabian Andre / Wilbur Schwandt",
+    "genre": "Jazz Standard",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Taking a Chance on Love",
+    "composer": "Vernon Duke",
+    "genre": "Jazz Standard",
+    "original_key": "C",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Moon River",
+    "composer": "Henry Mancini",
+    "genre": "Jazz Ballad",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "At Last",
+    "composer": "Harry Warren",
+    "genre": "Blues / Ballad",
+    "original_key": "F",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Summertime",
+    "composer": "George Gershwin",
+    "genre": "Jazz Standard",
+    "original_key": "Am",
+    "mastery_level": 5,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Take Five",
+    "composer": "Paul Desmond",
+    "genre": "Cool Jazz",
+    "original_key": "Ebm",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "L.O.V.E",
+    "composer": "Bert Kaempfert / Milt Gabler",
+    "genre": "Jazz Standard",
+    "original_key": "G",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Unforgettable",
+    "composer": "Irving Gordon",
+    "genre": "Jazz Standard",
+    "original_key": "G",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "My Funny Valentine",
+    "composer": "Richard Rodgers",
+    "genre": "Jazz Ballad",
+    "original_key": "Cm",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Bluesette",
+    "composer": "Toots Thielemans",
+    "genre": "Jazz Waltz",
+    "original_key": "Bb",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Four",
+    "composer": "Miles Davis",
+    "genre": "Bebop",
+    "original_key": "Eb",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "They Say It's Spring",
+    "composer": "Bob Haymes",
+    "genre": "Jazz",
+    "original_key": "C",
+    "mastery_level": 2,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "I Wish You Love",
+    "composer": "Charles Trenet",
+    "genre": "Jazz / Chanson",
+    "original_key": "Eb",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Jim",
+    "composer": "Caesar Petrillo / Milton Samuels",
+    "genre": "Jazz",
+    "original_key": "F",
+    "mastery_level": 2,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Guess Who I Saw Today",
+    "composer": "Murray Grand",
+    "genre": "Jazz Ballad",
+    "original_key": "C",
+    "mastery_level": 2,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Sway",
+    "composer": "Luis Demetrio / Pablo Beltrán Ruiz",
+    "genre": "Mambo / Latin Jazz",
+    "original_key": "Dm",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Come Fly with Me",
+    "composer": "Jimmy Van Heusen",
+    "genre": "Jazz Standard",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Beyond the Sea",
+    "composer": "Charles Trenet",
+    "genre": "Jazz / Chanson",
+    "original_key": "F",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Quizás, Quizás, Quizás",
+    "composer": "Osvaldo Farrés",
+    "genre": "Bolero",
+    "original_key": "Dm",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Can't Help Falling in Love",
+    "composer": "Hugo Peretti / Luigi Creatore",
+    "genre": "Ballad",
+    "original_key": "D",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Caravan",
+    "composer": "Duke Ellington / Juan Tizol",
+    "genre": "Latin Jazz",
+    "original_key": "Fm",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Till There Was You",
+    "composer": "Meredith Willson",
+    "genre": "Jazz / Bossa",
+    "original_key": "C",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "There Will Never Be Another You",
+    "composer": "Harry Warren",
+    "genre": "Jazz Standard",
+    "original_key": "Eb",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "New York, New York",
+    "composer": "John Kander",
+    "genre": "Traditional Pop",
+    "original_key": "D",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "The Shadow of Your Smile",
+    "composer": "Johnny Mandel",
+    "genre": "Jazz Ballad",
+    "original_key": "Em",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "The Days of Wine and Roses",
+    "composer": "Henry Mancini",
+    "genre": "Jazz Standard",
+    "original_key": "F",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Strangers in the Night",
+    "composer": "Bert Kaempfert",
+    "genre": "Traditional Pop",
+    "original_key": "F",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Smile",
+    "composer": "Charlie Chaplin",
+    "genre": "Ballad / Standard",
+    "original_key": "F",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Sous le Ciel de Paris",
+    "composer": "Hubert Giraud",
+    "genre": "Chanson",
+    "original_key": "Dm",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "She",
+    "composer": "Charles Aznavour",
+    "genre": "Ballad",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "My Way",
+    "composer": "Claude François / Paul Anka",
+    "genre": "Traditional Pop",
+    "original_key": "D",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "I've Got You Under My Skin",
+    "composer": "Cole Porter",
+    "genre": "Jazz Standard",
+    "original_key": "Eb",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Raindrops Keep Fallin' on My Head",
+    "composer": "Burt Bacharach",
+    "genre": "Pop",
+    "original_key": "F",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "La Vie en Rose",
+    "composer": "Édith Piaf / Louiguy",
+    "genre": "Chanson",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "My Favorite Things",
+    "composer": "Richard Rodgers",
+    "genre": "Jazz Standard",
+    "original_key": "Em",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "My Girl",
+    "composer": "Smokey Robinson",
+    "genre": "Motown / Soul",
+    "original_key": "C",
+    "mastery_level": 5,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Georgia on My Mind",
+    "composer": "Hoagy Carmichael",
+    "genre": "Blues / Standard",
+    "original_key": "G",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Have You Ever Seen the Rain",
+    "composer": "John Fogerty",
+    "genre": "Classic Rock",
+    "original_key": "C",
+    "mastery_level": 5,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Por una Cabeza",
+    "composer": "Carlos Gardel",
+    "genre": "Tango",
+    "original_key": "G",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "La Barca",
+    "composer": "Roberto Cantoral",
+    "genre": "Bolero",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Bésame Mucho",
+    "composer": "Consuelo Velázquez",
+    "genre": "Bolero",
+    "original_key": "Dm",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "This Masquerade",
+    "composer": "Leon Russell",
+    "genre": "Jazz / Pop",
+    "original_key": "Fm",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Sunny",
+    "composer": "Bobby Hebb",
+    "genre": "Soul / Jazz",
+    "original_key": "Am",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "How High the Moon",
+    "composer": "Morgan Lewis",
+    "genre": "Bebop / Standard",
+    "original_key": "G",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Mack the Knife",
+    "composer": "Kurt Weill",
+    "genre": "Jazz Standard",
+    "original_key": "Bb",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Poinciana",
+    "composer": "Nat Simon",
+    "genre": "Latin Jazz",
+    "original_key": "G",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "St. Thomas",
+    "composer": "Sonny Rollins",
+    "genre": "Calypso Jazz",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Round Midnight",
+    "composer": "Thelonious Monk",
+    "genre": "Jazz Ballad",
+    "original_key": "Ebm",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Let Me Try Again",
+    "composer": "Caravelli / Paul Anka",
+    "genre": "Balada",
+    "original_key": "A",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "When I Fall in Love",
+    "composer": "Victor Young",
+    "genre": "Jazz Ballad",
+    "original_key": "Eb",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Begin the Beguine",
+    "composer": "Cole Porter",
+    "genre": "Jazz Standard",
+    "original_key": "C",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Nanã",
+    "composer": "Moacir Santos",
+    "genre": "Afro-Jazz Instrumental",
+    "original_key": "Dm",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "April Child",
+    "composer": "Moacir Santos",
+    "genre": "Afro-Jazz Instrumental",
+    "original_key": "C",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "And I Love Her",
+    "composer": "The Beatles",
+    "genre": "Pop / Ballad",
+    "original_key": "E",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "All My Loving",
+    "composer": "The Beatles",
+    "genre": "Pop Rock",
+    "original_key": "E",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Can't Buy Me Love",
+    "composer": "The Beatles",
+    "genre": "Rock and Roll",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "I Want to Hold Your Hand",
+    "composer": "The Beatles",
+    "genre": "Pop Rock",
+    "original_key": "G",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Hey Jude",
+    "composer": "The Beatles",
+    "genre": "Pop Rock",
+    "original_key": "F",
+    "mastery_level": 5,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Day Tripper",
+    "composer": "The Beatles",
+    "genre": "Rock",
+    "original_key": "E",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Come Together",
+    "composer": "The Beatles",
+    "genre": "Rock",
+    "original_key": "Dm",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Through the Fire",
+    "composer": "David Foster / Chaka Khan",
+    "genre": "R&B / Soul",
+    "original_key": "Ab",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "After the Love Has Gone",
+    "composer": "David Foster / Earth Wind & Fire",
+    "genre": "Soul / Ballad",
+    "original_key": "F",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Mornin'",
+    "composer": "Al Jarreau / David Foster",
+    "genre": "R&B / Jazz Pop",
+    "original_key": "C",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Easy",
+    "composer": "Lionel Richie",
+    "genre": "Soul",
+    "original_key": "Ab",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Your Song",
+    "composer": "Elton John",
+    "genre": "Pop / Ballad",
+    "original_key": "Eb",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Careless Whisper",
+    "composer": "George Michael",
+    "genre": "Pop / Ballad",
+    "original_key": "Dm",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Lovin' You",
+    "composer": "Minnie Riperton",
+    "genre": "Soul / Ballad",
+    "original_key": "F",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "The Look of Love",
+    "composer": "Burt Bacharach",
+    "genre": "Bossa / Pop",
+    "original_key": "Dm",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "The Greatest Love of All",
+    "composer": "Michael Masser",
+    "genre": "Pop / Ballad",
+    "original_key": "A",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Run to You",
+    "composer": "Jud Friedman / Allan Rich",
+    "genre": "Pop / Ballad",
+    "original_key": "C",
+    "mastery_level": 2,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Close to You",
+    "composer": "Burt Bacharach",
+    "genre": "Pop",
+    "original_key": "G",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Change the World",
+    "composer": "Tommy Sims / Eric Clapton",
+    "genre": "Acoustic Pop",
+    "original_key": "E",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Just the Two of Us",
+    "composer": "Bill Withers / Ralph MacDonald",
+    "genre": "R&B / Groove",
+    "original_key": "Fm",
+    "mastery_level": 5,
+    "representatives": [
+      "Luiza Salles",
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Everything",
+    "composer": "Michael Bublé",
+    "genre": "Pop",
+    "original_key": "D",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "From the Start",
+    "composer": "Laufey",
+    "genre": "Jazz Pop / Bossa",
+    "original_key": "C",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Just the Way You Are",
+    "composer": "Billy Joel",
+    "genre": "Pop / Ballad",
+    "original_key": "D",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "You'll Be in My Heart",
+    "composer": "Phil Collins",
+    "genre": "Pop / Ballad",
+    "original_key": "A",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "All Night Long",
+    "composer": "Lionel Richie",
+    "genre": "Pop / Dance",
+    "original_key": "Ab",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "I Wanna Be Where You Are",
+    "composer": "Leon Ware",
+    "genre": "Soul",
+    "original_key": "Eb",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Smooth Operator",
+    "composer": "Sade",
+    "genre": "Smooth Jazz / Pop",
+    "original_key": "Dm",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Englishman in New York",
+    "composer": "Sting",
+    "genre": "Pop / Reggae",
+    "original_key": "Em",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Crazy Little Thing Called Love",
+    "composer": "Freddie Mercury",
+    "genre": "Rockabilly",
+    "original_key": "D",
+    "mastery_level": 5,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Feitiço da vila",
+    "composer": "Noel Rosa",
+    "genre": "Samba Tradicional",
+    "original_key": "D",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Alguém me disse",
+    "composer": "Jair Amorim / Evaldo Gouveia",
+    "genre": "Samba Canção",
+    "original_key": "A",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Baby",
+    "composer": "Caetano Veloso",
+    "genre": "Tropicália / MPB",
+    "original_key": "E",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "É com esse que eu vou",
+    "composer": "Pedro Caetano",
+    "genre": "Samba Tradicional",
+    "original_key": "D",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Mancada",
+    "composer": "Lucio Cardim",
+    "genre": "Samba",
+    "original_key": "C",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Você passa eu acho graça",
+    "composer": "Ataulfo Alves",
+    "genre": "Samba Tradicional",
+    "original_key": "Dm",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Brisa do mar",
+    "composer": "Samba Paulista",
+    "genre": "Samba",
+    "original_key": "G",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Ronda",
+    "composer": "Paulo Vanzolini",
+    "genre": "Samba Canção",
+    "original_key": "F",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Sampa",
+    "composer": "Caetano Veloso",
+    "genre": "MPB",
+    "original_key": "C",
+    "mastery_level": 5,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Coração vagabundo",
+    "composer": "Caetano Veloso",
+    "genre": "Bossa / MPB",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Samba e amor",
+    "composer": "Chico Buarque",
+    "genre": "Samba / MPB",
+    "original_key": "Cm",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Samba da minha terra",
+    "composer": "Dorival Caymmi",
+    "genre": "Samba Tradicional",
+    "original_key": "D",
+    "mastery_level": 5,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Sá Marina",
+    "composer": "Antonio Adolfo / Tibério Gaspar",
+    "genre": "Samba Soul / MPB",
+    "original_key": "F",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Nem vem que não tem",
+    "composer": "Carlos Imperial",
+    "genre": "Pilantragem / MPB",
+    "original_key": "A",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Além do horizonte",
+    "composer": "Roberto Carlos / Erasmo Carlos",
+    "genre": "Pop / MPB",
+    "original_key": "A",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Jade",
+    "composer": "João Bosco",
+    "genre": "MPB",
+    "original_key": "Em",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Roda viva",
+    "composer": "Chico Buarque",
+    "genre": "MPB",
+    "original_key": "Am",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Meninas do Brasil",
+    "composer": "Moraes Moreira / Fausto Nilo",
+    "genre": "Frevo / MPB",
+    "original_key": "E",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Sintonia",
+    "composer": "Moraes Moreira",
+    "genre": "MPB",
+    "original_key": "Dm",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Saudade da Bahia",
+    "composer": "Dorival Caymmi",
+    "genre": "Samba Tradicional",
+    "original_key": "D",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Regra três",
+    "composer": "Toquinho / Vinicius de Moraes",
+    "genre": "Samba",
+    "original_key": "Am",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Pra quê discutir com Madame",
+    "composer": "Janet de Almeida / Haroldo Barbosa",
+    "genre": "Samba",
+    "original_key": "F",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "A mesma rosa amarela",
+    "composer": "Capiba / Carlos Pena Filho",
+    "genre": "Samba Canção",
+    "original_key": "Dm",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Trombone de prata",
+    "composer": "Capiba",
+    "genre": "Frevo de Bloco",
+    "original_key": "E",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Último regresso",
+    "composer": "Getúlio Cavalcanti",
+    "genre": "Frevo de Bloco",
+    "original_key": "Gm",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Evocação nº 1",
+    "composer": "Nelson Ferreira",
+    "genre": "Frevo de Bloco",
+    "original_key": "Cm",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Madeira do Rosarinho",
+    "composer": "Capiba",
+    "genre": "Frevo Canção",
+    "original_key": "Gm",
+    "mastery_level": 4,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Bela",
+    "composer": "Frevo Pernambucano",
+    "genre": "Frevo",
+    "original_key": "C",
+    "mastery_level": 3,
+    "representatives": [
+      "Arthur Felipe"
+    ]
+  },
+  {
+    "title": "Luz do sol",
+    "composer": "Caetano Veloso",
+    "genre": "MPB",
+    "original_key": "A",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Coisas do Brasil",
+    "composer": "Guilherme Arantes",
+    "genre": "MPB",
+    "original_key": "Em",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Rio Amazonas",
+    "composer": "Dori Caymmi",
+    "genre": "MPB",
+    "original_key": "Am",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "A ilha",
+    "composer": "Djavan / Chico Buarque",
+    "genre": "MPB",
+    "original_key": "D",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Dandara",
+    "composer": "Moacyr Luz",
+    "genre": "MPB / Samba",
+    "original_key": "A",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Iluminado",
+    "composer": "Ivan Lins",
+    "genre": "MPB",
+    "original_key": "F",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Acaso",
+    "composer": "Ivan Lins",
+    "genre": "MPB",
+    "original_key": "Bm",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Vieste",
+    "composer": "Ivan Lins",
+    "genre": "MPB",
+    "original_key": "D",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Um novo tempo",
+    "composer": "Ivan Lins",
+    "genre": "MPB",
+    "original_key": "A",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Cantor da noite",
+    "composer": "Ivan Lins",
+    "genre": "MPB",
+    "original_key": "Em",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Rio",
+    "composer": "Roberto Menescal / Ronaldo Bôscoli",
+    "genre": "Bossa Nova",
+    "original_key": "C",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Guarde nos olhos",
+    "composer": "Ivan Lins",
+    "genre": "MPB",
+    "original_key": "D",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Café com pão",
+    "composer": "Djavan",
+    "genre": "MPB",
+    "original_key": "G",
+    "mastery_level": 3,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Alô alô marciano",
+    "composer": "Rita Lee / Roberto de Carvalho",
+    "genre": "Pop / MPB",
+    "original_key": "Em",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles"
+    ]
+  },
+  {
+    "title": "Influência do Jazz",
+    "composer": "Carlos Lyra",
+    "genre": "Samba Jazz",
+    "original_key": "C",
+    "mastery_level": 4,
+    "representatives": [
+      "Luiza Salles",
+      "TAO Trio"
+    ]
+  }
+]
