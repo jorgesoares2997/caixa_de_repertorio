@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   createColumnHelper,
   flexRender,
@@ -8,9 +8,11 @@ import {
   useReactTable,
   getSortedRowModel,
   SortingState,
+  getFilteredRowModel,
 } from "@tanstack/react-table";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Music2, Star, Search } from "lucide-react";
+import { Search, SlidersHorizontal, Download } from "lucide-react";
+import { MasteryRating } from "@/components/MasteryRating";
+import { StickerPillButton } from "@/components/StickerPillButton";
 
 type Song = {
   id: string;
@@ -19,7 +21,6 @@ type Song = {
   genre: string;
   originalKey: string;
   masteryLevel: number;
-  tempoBpm: number;
 };
 
 const columnHelper = createColumnHelper<Song>();
@@ -27,19 +28,29 @@ const columnHelper = createColumnHelper<Song>();
 export default function SongsPage() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [activeTag, setActiveTag] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('http://localhost:8080/api/songs')
       .then(res => res.json())
       .then(data => setSongs(data))
       .catch(err => console.error("Failed to load songs", err));
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === '/' && document.activeElement?.tagName !== 'INPUT') {
+        e.preventDefault();
+        document.getElementById('search-input')?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const updateMasteryOptimistic = (id: string, level: number) => {
     setSongs((prev) =>
       prev.map((song) => (song.id === id ? { ...song, masteryLevel: level } : song))
     );
-    
     fetch(`http://localhost:8080/api/songs/${id}/mastery`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -47,143 +58,152 @@ export default function SongsPage() {
     }).catch(err => console.error("Failed to update mastery level", err));
   };
 
-  const downloadPdf = () => {
-    window.open('http://localhost:8080/api/songs/portfolio/pdf', '_blank');
-  };
-
   const columns = [
     columnHelper.accessor("title", {
-      header: "Title",
+      header: "Título",
       cell: (info) => (
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-brand-300/10 text-brand-600 rounded-lg">
-            <Music2 className="w-4 h-4" />
-          </div>
-          <span className="font-semibold text-brand-800">{info.getValue()}</span>
-        </div>
+        <span className="font-black text-lg text-ink font-[family-name:var(--font-oswald)] uppercase tracking-wide">
+          {info.getValue()}
+        </span>
       ),
     }),
     columnHelper.accessor("composer", {
-      header: "Composer",
-      cell: (info) => <span className="text-brand-600 font-medium">{info.getValue()}</span>,
+      header: "Compositor",
+      cell: (info) => <span className="text-dim font-medium">{info.getValue() || "-"}</span>,
     }),
     columnHelper.accessor("genre", {
-      header: "Genre",
+      header: "Gênero",
       cell: (info) => (
-        <span className="px-3 py-1 bg-brand-400/10 text-brand-600 border border-brand-400/20 rounded-full text-xs font-semibold uppercase tracking-wider">
-          {info.getValue()}
+        <span className="px-3 py-1 bg-muted border-2 border-ink rounded-full text-[11px] font-bold uppercase tracking-wider font-[family-name:var(--font-dm-sans)]">
+          {info.getValue() || "N/A"}
         </span>
       ),
     }),
-    columnHelper.accessor("originalKey", {
-      header: "Key",
-      cell: (info) => (
-        <span className="font-bold text-brand-800 bg-brand-300/20 px-2 py-1 rounded-md">
-          {info.getValue()}
-        </span>
-      ),
-    }),
-    columnHelper.accessor("masteryLevel", {
-      header: "Mastery (1-5)",
+    columnHelper.display({
+      id: "keys",
+      header: "Tons Conhecidos",
       cell: (info) => {
-        const level = info.getValue();
+        // Mocking colored badges per singer
+        const key = info.row.original.originalKey || "C";
         return (
-          <div className="flex gap-1.5 items-center">
-            {[1, 2, 3, 4, 5].map((val) => (
-              <button
-                key={val}
-                onClick={() => updateMasteryOptimistic(info.row.original.id, val)}
-                className={`w-7 h-7 rounded-lg text-xs font-bold flex items-center justify-center transition-all duration-300 shadow-sm ${
-                  val <= level
-                    ? "bg-gradient-to-br from-brand-300 to-brand-400 text-brand-800 shadow-brand-300/30"
-                    : "bg-white border border-brand-300/30 text-brand-600/50 hover:bg-brand-100 hover:border-brand-400 hover:text-brand-600"
-                }`}
-              >
-                {val}
-              </button>
-            ))}
+          <div className="flex gap-2">
+            <span className="px-2 py-0.5 bg-accent-lavender border-2 border-ink rounded-md text-xs font-bold font-[family-name:var(--font-dm-sans)]">
+              {key} <span className="opacity-50 ml-1">LUIZA</span>
+            </span>
           </div>
         );
       },
     }),
+    columnHelper.accessor("masteryLevel", {
+      header: "Domínio",
+      cell: (info) => (
+        <MasteryRating 
+          level={info.getValue() || 0} 
+          onChange={(level) => updateMasteryOptimistic(info.row.original.id, level)} 
+        />
+      ),
+    }),
   ];
 
+  const filteredData = useMemo(() => {
+    if (!activeTag) return songs;
+    return songs.filter(s => s.genre?.toLowerCase().includes(activeTag.toLowerCase()));
+  }, [songs, activeTag]);
+
   const table = useReactTable({
-    data: songs,
+    data: filteredData,
     columns,
-    state: {
-      sorting,
-    },
+    state: { sorting, globalFilter },
     onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
   });
 
+  const tags = ["Bossa Nova", "Jazz Standards", "MPB", "Soul", "Pop"];
+
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex justify-between items-end bg-white/70 backdrop-blur-md p-6 rounded-2xl border border-brand-300/20 shadow-sm">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
         <div>
-          <div className="flex items-center gap-2 text-brand-600 mb-2">
-            <Star className="w-5 h-5 fill-current" />
-            <span className="font-semibold tracking-wide uppercase text-sm">Dashboard</span>
-          </div>
-          <h2 className="text-4xl font-extrabold tracking-tight text-brand-800">Repertoire Studio</h2>
-          <p className="text-brand-600/80 mt-2 font-medium">Manage your complete song database and track your mastery.</p>
+          <h1 className="text-5xl font-black uppercase tracking-tight text-ink font-[family-name:var(--font-oswald)]">
+            Acervo de Repertório
+          </h1>
+          <p className="text-dim font-medium mt-2">Busque por '/', filtre e avalie seu domínio instantaneamente.</p>
         </div>
         
-        <div className="flex gap-4">
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-brand-600/50" />
-            <input 
-              type="text" 
-              placeholder="Search songs..." 
-              className="pl-9 pr-4 py-2.5 rounded-xl border border-brand-300/30 bg-white/80 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-400 transition-all w-64 text-brand-800 placeholder:text-brand-600/40"
-            />
+        <StickerPillButton onClick={() => window.open('http://localhost:8080/api/songs/portfolio/pdf', '_blank')}>
+          Exportar Acervo Completo
+        </StickerPillButton>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-6 mb-6">
+        {/* Search */}
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dim" />
+          <input 
+            id="search-input"
+            value={globalFilter ?? ""}
+            onChange={e => setGlobalFilter(e.target.value)}
+            placeholder="Buscar música, compositor... (/ para focar)"
+            className="w-full bg-surface border-2 border-ink rounded-2xl py-3 pl-12 pr-4 shadow-neo font-medium focus:outline-none focus:ring-4 focus:ring-accent-lime/50 transition-all placeholder:text-dim/60"
+          />
+        </div>
+
+        {/* Tags */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="w-10 h-10 flex items-center justify-center bg-muted border-2 border-ink rounded-xl mr-2">
+            <SlidersHorizontal className="w-5 h-5 text-ink" />
           </div>
-          <button 
-            onClick={downloadPdf}
-            className="group flex items-center gap-2 bg-brand-800 text-brand-100 px-5 py-2.5 rounded-xl hover:bg-brand-600 transition-all duration-300 shadow-lg shadow-brand-800/20 font-medium border border-brand-600"
-          >
-            <Download className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
-            Export PDF
-          </button>
+          {tags.map(tag => (
+            <button 
+              key={tag}
+              onClick={() => setActiveTag(activeTag === tag ? null : tag)}
+              className={`px-4 py-2 border-2 border-ink rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-[2px_2px_0px_#161616] hover:translate-y-0.5 hover:shadow-[0px_0px_0px_#161616] font-[family-name:var(--font-dm-sans)] ${activeTag === tag ? 'bg-ink text-surface' : 'bg-surface text-ink hover:bg-muted'}`}
+            >
+              {tag}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl shadow-brand-800/5 border border-brand-300/20 overflow-hidden">
-        <Table>
-          <TableHeader className="bg-brand-100/50">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="border-brand-300/20 hover:bg-transparent">
-                {headerGroup.headers.map((header) => (
-                  <TableHead 
-                    key={header.id}
-                    className="cursor-pointer py-4 px-6 text-brand-800/60 font-bold uppercase tracking-wider text-xs"
-                    onClick={header.column.getToggleSortingHandler()}
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} className="border-brand-300/10 hover:bg-brand-300/5 transition-colors group">
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="py-4 px-6">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <div className="bg-surface rounded-3xl border-2 border-ink shadow-neo overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
+            <thead className="bg-muted border-b-2 border-ink">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <th 
+                      key={header.id}
+                      onClick={header.column.getToggleSortingHandler()}
+                      className="py-4 px-6 font-bold uppercase tracking-wider text-xs text-ink cursor-pointer hover:bg-ink/5 transition-colors font-[family-name:var(--font-dm-sans)]"
+                    >
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody className="divide-y-2 divide-muted">
+              {table.getRowModel().rows.map((row, i) => (
+                <tr key={row.id} className={`hover:bg-accent-lime/10 transition-colors ${i % 2 === 0 ? 'bg-surface' : 'bg-canvas/50'}`}>
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="py-4 px-6">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {table.getRowModel().rows.length === 0 && (
+            <div className="p-12 text-center text-dim font-medium">
+              Nenhuma música encontrada.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
