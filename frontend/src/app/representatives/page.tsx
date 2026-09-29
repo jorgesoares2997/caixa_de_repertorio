@@ -34,7 +34,8 @@ export default function RepresentativesPage() {
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/representatives")
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    fetch(`${API_URL}/api/representatives`)
       .then((res) => res.json())
       .then((data) => setRepresentatives(data))
       .catch((err) => console.error(err));
@@ -44,7 +45,8 @@ export default function RepresentativesPage() {
     setSelectedRep(rep);
     setIsLoadingSongs(true);
     try {
-      const res = await fetch(`http://localhost:8080/api/representatives/${rep.id}/songs`);
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const res = await fetch(`${API_URL}/api/representatives/${rep.id}/songs`);
       if (res.ok) {
         const data = await res.json();
         setSongs(data);
@@ -60,7 +62,8 @@ export default function RepresentativesPage() {
     if (!selectedRep) return;
     setIsExporting(true);
     try {
-      const response = await fetch(`http://localhost:8080/api/representatives/${selectedRep.id}/export-pdf?groupBy=COMPOSER&sortBy=TITLE`);
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const response = await fetch(`${API_URL}/api/representatives/${selectedRep.id}/export-pdf?groupBy=COMPOSER&sortBy=TITLE`);
       if (!response.ok) throw new Error("Falha ao exportar PDF");
       
       const blob = await response.blob();

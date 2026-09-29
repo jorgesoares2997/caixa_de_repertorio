@@ -33,7 +33,8 @@ export default function GigConstructor() {
   ]);
 
   useEffect(() => {
-    fetch('http://localhost:8080/api/songs')
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    fetch(`${API_URL}/api/songs`)
       .then(res => res.json())
       .then(data => setAvailableSongs(data))
       .catch(err => console.error(err));

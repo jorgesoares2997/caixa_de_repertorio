@@ -32,7 +32,8 @@ export default function SongsPage() {
   const [activeTag, setActiveTag] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('http://localhost:8080/api/songs')
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    fetch(`${API_URL}/api/songs`)
       .then(res => res.json())
       .then(data => setSongs(data))
       .catch(err => console.error("Failed to load songs", err));
@@ -51,7 +52,8 @@ export default function SongsPage() {
     setSongs((prev) =>
       prev.map((song) => (song.id === id ? { ...song, masteryLevel: level } : song))
     );
-    fetch(`http://localhost:8080/api/songs/${id}/mastery`, {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    fetch(`${API_URL}/api/songs/${id}/mastery`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ level })
@@ -133,7 +135,10 @@ export default function SongsPage() {
           <p className="text-dim font-medium mt-2">Busque por '/', filtre e avalie seu domínio instantaneamente.</p>
         </div>
         
-        <StickerPillButton onClick={() => window.open('http://localhost:8080/api/songs/portfolio/pdf', '_blank')}>
+        <StickerPillButton onClick={() => {
+          const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+          window.open(`${API_URL}/api/songs/portfolio/pdf`, '_blank');
+        }}>
           Exportar Acervo Completo
         </StickerPillButton>
       </div>

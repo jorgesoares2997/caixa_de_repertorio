@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: caixa-repertorio-backend
+    env: docker
+    dockerContext: backend
+    dockerfilePath: backend/Dockerfile
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: SPRING_MAIL_HOST
+        sync: false
+      - key: SPRING_MAIL_PORT
+        sync: false
+      - key: SPRING_MAIL_USERNAME
+        sync: false
+      - key: SPRING_MAIL_PASSWORD
+        sync: false
+      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH
+        sync: false
+      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE
+        sync: false
+      - key: EVOLUTION_API_URL
+        sync: false
+      - key: EVOLUTION_API_APIKEY
+        sync: false
+      - key: EVOLUTION_API_INSTANCE
+        sync: false
+      - key: WHATSAPP_TARGET_NUMBER
+        sync: false
