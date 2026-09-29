@@ -15,7 +15,7 @@ export function FloatingNav() {
           <NavLink href="/" label="Início" current={pathname === "/"} />
           <NavLink href="/songs" label="Acervo" current={pathname === "/songs"} />
           <NavLink href="/representatives" label="Projetos" current={pathname.startsWith("/representatives")} />
-          <NavLink href="/gigs" label="Shows" current={pathname.startsWith("/gigs")} />
+          <NavLink href="/gigs" label="Shows" current={pathname === "/gigs"} />
         </div>
 
         <div className="w-px h-6 bg-ink/20 hidden md:block" />
