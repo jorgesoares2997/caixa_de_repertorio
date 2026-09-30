@@ -13,4 +13,8 @@ public interface GigItemRepository extends JpaRepository<GigItem, UUID> {
 
     @Query("SELECT gi FROM GigItem gi JOIN FETCH gi.song WHERE gi.gig.id = :gigId ORDER BY gi.blockNumber, gi.orderIndex")
     List<GigItem> findByGigIdOrdered(UUID gigId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM GigItem gi WHERE gi.song.id = :songId")
+    void deleteBySongId(UUID songId);
 }

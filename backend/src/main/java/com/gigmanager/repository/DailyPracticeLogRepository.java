@@ -8,4 +8,7 @@ import java.util.UUID;
 
 @Repository
 public interface DailyPracticeLogRepository extends JpaRepository<DailyPracticeLog, UUID> {
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("DELETE FROM DailyPracticeLog dpl WHERE dpl.song.id = :songId")
+    void deleteBySongId(UUID songId);
 }

@@ -17,4 +17,8 @@ public interface RepresentativeSongRepository extends JpaRepository<Representati
 
     @Query("SELECT rs FROM RepresentativeSong rs JOIN FETCH rs.representative WHERE rs.song.id = :songId")
     List<RepresentativeSong> findBySongIdWithRepresentative(@Param("songId") UUID songId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM RepresentativeSong rs WHERE rs.song.id = :songId")
+    void deleteBySongId(@Param("songId") UUID songId);
 }

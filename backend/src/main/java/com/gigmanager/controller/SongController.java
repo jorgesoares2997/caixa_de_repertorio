@@ -1,11 +1,15 @@
 package com.gigmanager.controller;
 
 import com.gigmanager.domain.Song;
+import com.gigmanager.repository.DailyPracticeLogRepository;
+import com.gigmanager.repository.GigItemRepository;
+import com.gigmanager.repository.RepresentativeSongRepository;
 import com.gigmanager.repository.SongRepository;
 import com.gigmanager.service.PdfService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,10 +22,22 @@ import java.util.UUID;
 public class SongController {
 
     private final SongRepository songRepository;
+    private final RepresentativeSongRepository representativeSongRepository;
+    private final GigItemRepository gigItemRepository;
+    private final DailyPracticeLogRepository dailyPracticeLogRepository;
     private final PdfService pdfService;
 
-    public SongController(SongRepository songRepository, PdfService pdfService) {
+    public SongController(
+            SongRepository songRepository,
+            RepresentativeSongRepository representativeSongRepository,
+            GigItemRepository gigItemRepository,
+            DailyPracticeLogRepository dailyPracticeLogRepository,
+            PdfService pdfService
+    ) {
         this.songRepository = songRepository;
+        this.representativeSongRepository = representativeSongRepository;
+        this.gigItemRepository = gigItemRepository;
+        this.dailyPracticeLogRepository = dailyPracticeLogRepository;
         this.pdfService = pdfService;
     }
 
@@ -30,8 +46,18 @@ public class SongController {
         return songRepository.findAll();
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<Song> getSongById(@PathVariable UUID id) {
+        return songRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     public Song createSong(@RequestBody Song song) {
+        if (song.getMasteryLevel() == null) {
+            song.setMasteryLevel(3);
+        }
         return songRepository.save(song);
     }
 
@@ -43,7 +69,7 @@ public class SongController {
                     song.setComposer(songDetails.getComposer());
                     song.setGenre(songDetails.getGenre());
                     song.setOriginalKey(songDetails.getOriginalKey());
-                    song.setMasteryLevel(songDetails.getMasteryLevel());
+                    song.setMasteryLevel(songDetails.getMasteryLevel() != null ? songDetails.getMasteryLevel() : song.getMasteryLevel());
                     song.setTempoBpm(songDetails.getTempoBpm());
                     song.setNotes(songDetails.getNotes());
                     return ResponseEntity.ok(songRepository.save(song));
@@ -55,18 +81,24 @@ public class SongController {
     public ResponseEntity<Song> updateMasteryLevel(@PathVariable UUID id, @RequestBody Map<String, Integer> body) {
         return songRepository.findById(id)
                 .map(song -> {
-                    song.setMasteryLevel(body.get("level"));
+                    if (body.containsKey("level") && body.get("level") != null) {
+                        song.setMasteryLevel(body.get("level"));
+                    }
                     return ResponseEntity.ok(songRepository.save(song));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @Transactional
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteSong(@PathVariable UUID id) {
         return songRepository.findById(id)
                 .map(song -> {
+                    representativeSongRepository.deleteBySongId(id);
+                    gigItemRepository.deleteBySongId(id);
+                    dailyPracticeLogRepository.deleteBySongId(id);
                     songRepository.delete(song);
-                    return ResponseEntity.ok().build();
+                    return ResponseEntity.ok(Map.of("message", "Música excluída com sucesso", "id", id));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
