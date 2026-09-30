@@ -5,28 +5,18 @@ import { StickerPillButton } from "@/components/StickerPillButton";
 import { motion } from "framer-motion";
 import { Calendar, MapPin, Mic2, FileDown, Send, Plus } from "lucide-react";
 import Link from "next/link";
+import { useAppStore, Gig } from "@/lib/store";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-type Gig = {
-  id: string;
-  title: string;
-  eventDate: string;
-  venue: string;
-  representativeName: string;
-  items: { songTitle: string; performanceKey: string; blockNumber: number }[];
-};
-
 export default function GigsPage() {
-  const [gigs, setGigs] = useState<Gig[]>([]);
+  const gigs = useAppStore((state) => state.gigs);
+  const fetchGigs = useAppStore((state) => state.fetchGigs);
   const [sendingId, setSendingId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/gigs`)
-      .then((r) => r.json())
-      .then(setGigs)
-      .catch(console.error);
-  }, []);
+    fetchGigs();
+  }, [fetchGigs]);
 
   const sendWhatsApp = async (id: string) => {
     setSendingId(id);

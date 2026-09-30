@@ -4,16 +4,9 @@ import { useEffect, useState } from "react";
 import { Search, Plus, GripVertical, X, Save, Send } from "lucide-react";
 import { StickerPillButton } from "@/components/StickerPillButton";
 import { useRouter } from "next/navigation";
+import { useAppStore, Song, Representative } from "@/lib/store";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-
-type Song = {
-  id: string;
-  title: string;
-  composer: string;
-  genre: string;
-  originalKey: string;
-};
 
 type SetlistItem = Song & {
   uid: string;
@@ -27,12 +20,14 @@ type Block = {
   items: SetlistItem[];
 };
 
-type Representative = { id: string; name: string };
-
 export default function GigConstructor() {
   const router = useRouter();
-  const [availableSongs, setAvailableSongs] = useState<Song[]>([]);
-  const [representatives, setRepresentatives] = useState<Representative[]>([]);
+  const availableSongs = useAppStore((state) => state.songs);
+  const representatives = useAppStore((state) => state.representatives);
+  const fetchSongs = useAppStore((state) => state.fetchSongs);
+  const fetchRepresentatives = useAppStore((state) => state.fetchRepresentatives);
+  const invalidateCache = useAppStore((state) => state.invalidateCache);
+
   const [search, setSearch] = useState("");
   const [gigTitle, setGigTitle] = useState("");
   const [gigVenue, setGigVenue] = useState("");
@@ -49,9 +44,9 @@ export default function GigConstructor() {
   ]);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/songs`).then((r) => r.json()).then(setAvailableSongs).catch(console.error);
-    fetch(`${API_URL}/api/representatives`).then((r) => r.json()).then(setRepresentatives).catch(console.error);
-  }, []);
+    fetchSongs();
+    fetchRepresentatives();
+  }, [fetchSongs, fetchRepresentatives]);
 
   const filteredSongs = availableSongs.filter(
     (s) =>
@@ -117,6 +112,8 @@ export default function GigConstructor() {
       if (!res.ok) throw new Error("Falha ao salvar");
       const data = await res.json();
       setSavedGigId(data.id);
+      invalidateCache("gigs");
+      invalidateCache("stats");
       alert("✅ Show salvo com sucesso!");
     } catch (e) {
       alert("❌ Erro ao salvar o show.");

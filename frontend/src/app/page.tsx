@@ -1,29 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { StickerPillButton } from "@/components/StickerPillButton";
 import { Calendar } from "lucide-react";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-
-type Stats = {
-  totalSongs: number;
-  level5Songs: number;
-  upcomingGigs: number;
-  nextGigTitle: string | null;
-  nextGigDate: string | null;
-  nextGigVenue: string | null;
-};
+import { useAppStore } from "@/lib/store";
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<Stats | null>(null);
+  const stats = useAppStore((state) => state.stats);
+  const fetchStats = useAppStore((state) => state.fetchStats);
+  const fetchSongs = useAppStore((state) => state.fetchSongs);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/stats`)
-      .then((r) => r.json())
-      .then(setStats)
-      .catch(console.error);
-  }, []);
+    fetchStats();
+    fetchSongs();
+  }, [fetchStats, fetchSongs]);
 
   return (
     <div className="flex flex-col gap-16 md:gap-24 font-sans animate-in fade-in slide-in-from-bottom-8 duration-700">

@@ -9,51 +9,46 @@ export function StickerPillButton({
   children, 
   onClick, 
   className,
-  type = "button"
+  type = "button",
+  variant = "lime",
+  icon
 }: { 
   children: ReactNode; 
   onClick?: () => void;
   className?: string;
   type?: "button" | "submit" | "reset";
+  variant?: "lime" | "orange" | "lavender" | "cherry" | "white" | "dark";
+  icon?: ReactNode;
 }) {
+  const variantStyles = {
+    lime: "bg-accent-lime text-ink",
+    orange: "bg-accent-orange text-surface",
+    lavender: "bg-accent-lavender text-ink",
+    cherry: "bg-accent-cherry text-surface",
+    white: "bg-surface text-ink",
+    dark: "bg-ink text-surface"
+  };
+
   return (
     <motion.button
       type={type}
       onClick={onClick}
+      whileHover={{ y: -2 }}
+      whileTap={{ y: 0 }}
       className={twMerge(
-        "relative flex items-center gap-4 bg-accent-lime border-2 border-ink rounded-xl p-1.5 pl-5 pr-1.5 shadow-neo cursor-pointer overflow-hidden group hover:-translate-y-0.5 active:translate-y-0 transition-transform",
+        "relative inline-flex items-center justify-between gap-3 border-2 border-ink rounded-xl py-2 px-4 shadow-neo cursor-pointer transition-all font-[family-name:var(--font-dm-sans)] font-bold text-xs md:text-sm uppercase tracking-wider select-none",
+        variantStyles[variant] || variantStyles.lime,
         className
       )}
-      whileHover="hover"
-      initial="initial"
     >
-      <div className="relative z-10 flex-1 overflow-hidden h-5 flex items-center">
-        <motion.div 
-          className="absolute inset-0 flex items-center font-bold text-ink uppercase tracking-wider text-sm font-[family-name:var(--font-dm-sans)]"
-          variants={{
-            initial: { y: 0 },
-            hover: { y: "-100%" }
-          }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
-        >
-          {children}
-        </motion.div>
-        
-        <motion.div 
-          className="absolute inset-0 flex items-center font-bold text-ink uppercase tracking-wider text-sm font-[family-name:var(--font-dm-sans)]"
-          variants={{
-            initial: { y: "100%" },
-            hover: { y: 0 }
-          }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
-        >
-          {children}
-        </motion.div>
-      </div>
+      <span className="flex items-center gap-2 leading-none whitespace-nowrap">
+        {children}
+      </span>
 
-      <div className="relative z-10 w-8 h-8 rounded-full bg-ink flex items-center justify-center text-surface shrink-0">
-        <ArrowUpRight className="w-4 h-4" />
-      </div>
+      <span className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-ink text-surface flex items-center justify-center shrink-0 shadow-sm">
+        {icon || <ArrowUpRight className="w-3.5 h-3.5 md:w-4 md:h-4 text-surface" />}
+      </span>
     </motion.button>
   );
 }
+

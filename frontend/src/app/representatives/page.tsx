@@ -4,12 +4,7 @@ import { useEffect, useState } from "react";
 import { X, User, Music } from "lucide-react";
 import { StickerPillButton } from "@/components/StickerPillButton";
 import { MasteryRating } from "@/components/MasteryRating";
-
-type Representative = {
-  id: string;
-  name: string;
-  type: string;
-};
+import { useAppStore, Representative } from "@/lib/store";
 
 type Intersection = {
   representativeName: string;
@@ -27,19 +22,16 @@ type Song = {
 };
 
 export default function RepresentativesPage() {
-  const [representatives, setRepresentatives] = useState<Representative[]>([]);
+  const representatives = useAppStore((state) => state.representatives);
+  const fetchRepresentatives = useAppStore((state) => state.fetchRepresentatives);
   const [selectedRep, setSelectedRep] = useState<Representative | null>(null);
   const [songs, setSongs] = useState<Song[]>([]);
   const [isLoadingSongs, setIsLoadingSongs] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    fetch(`${API_URL}/api/representatives`)
-      .then((res) => res.json())
-      .then((data) => setRepresentatives(data))
-      .catch((err) => console.error(err));
-  }, []);
+    fetchRepresentatives();
+  }, [fetchRepresentatives]);
 
   const openModal = async (rep: Representative) => {
     setSelectedRep(rep);
