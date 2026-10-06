@@ -10,6 +10,7 @@ import {
   SortingState,
   getFilteredRowModel,
   getPaginationRowModel,
+  PaginationState,
 } from "@tanstack/react-table";
 import {
   Search,
@@ -23,6 +24,8 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   RefreshCw,
   Layers,
   Filter,
@@ -56,6 +59,12 @@ export default function SongsPage() {
   const [activeGenre, setActiveGenre] = useState<string | null>(null);
   const [masteryFilter, setMasteryFilter] = useState<number | null>(null);
 
+  // Controlled pagination state
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 25,
+  });
+
   // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isPracticeOpen, setIsPracticeOpen] = useState(false);
@@ -83,7 +92,12 @@ export default function SongsPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [fetchSongs]);
 
-  // Update mastery level
+  // Reset to page 1 only when filters explicitly change
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  }, [globalFilter, activeGenre, masteryFilter]);
+
+  // Update mastery level without losing current page
   const handleUpdateMastery = async (id: string, level: number) => {
     await updateMastery(id, level);
   };
@@ -237,21 +251,49 @@ export default function SongsPage() {
   const table = useReactTable({
     data: filteredData,
     columns,
-    state: { sorting, globalFilter },
+    state: {
+      sorting,
+      globalFilter,
+      pagination,
+    },
+    // CRITICAL: autoResetPageIndex: false ensures changing mastery rating or editing never jumps back to page 1
+    autoResetPageIndex: false,
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 30,
-      },
-    },
   });
 
   const availableGenres = ["MPB", "Bossa Nova", "Samba", "Jazz Standards", "Soul", "Pop", "Forró"];
+
+  // Calculate pagination window for numbered buttons
+  const currentPage = table.getState().pagination.pageIndex;
+  const pageCount = table.getPageCount() || 1;
+  const pageSize = table.getState().pagination.pageSize;
+  const totalRows = table.getFilteredRowModel().rows.length;
+  const startRow = totalRows === 0 ? 0 : currentPage * pageSize + 1;
+  const endRow = Math.min((currentPage + 1) * pageSize, totalRows);
+
+  const pageNumbers = useMemo(() => {
+    const pages: (number | "...")[] = [];
+    if (pageCount <= 7) {
+      for (let i = 0; i < pageCount; i++) pages.push(i);
+    } else {
+      pages.push(0);
+      if (currentPage > 2) pages.push("...");
+      const start = Math.max(1, currentPage - 1);
+      const end = Math.min(pageCount - 2, currentPage + 1);
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      if (currentPage < pageCount - 3) pages.push("...");
+      pages.push(pageCount - 1);
+    }
+    return pages;
+  }, [currentPage, pageCount]);
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700 mt-4 pb-20">
@@ -420,35 +462,110 @@ export default function SongsPage() {
           </table>
         </div>
 
-        {/* Pagination Bar */}
-        <div className="px-6 py-4 bg-canvas border-t-2 border-ink flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-xs font-bold uppercase tracking-wider text-dim font-[family-name:var(--font-dm-sans)]">
-            Exibindo {table.getRowModel().rows.length} de {table.getFilteredRowModel().rows.length} músicas filtradas
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-ink mr-2 font-[family-name:var(--font-dm-sans)]">
-              Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount() || 1}
+        {/* Structured Pagination Bar */}
+        <div className="px-6 py-4 bg-canvas border-t-2 border-ink flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* Summary & Page Size Selection */}
+          <div className="flex items-center gap-4 flex-wrap">
+            <span className="text-xs font-bold uppercase tracking-wider text-dim font-[family-name:var(--font-dm-sans)]">
+              Exibindo <span className="text-ink font-black">{startRow}–{endRow}</span> de <span className="text-ink font-black">{totalRows}</span> músicas
             </span>
 
+            <div className="flex items-center gap-1.5 border-l-2 border-ink/20 pl-4">
+              <span className="text-xs font-bold text-dim uppercase tracking-wider font-[family-name:var(--font-dm-sans)]">
+                Por pág:
+              </span>
+              {[25, 50, 100].map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => table.setPageSize(size)}
+                  className={`px-2.5 py-1 rounded-lg border border-ink text-xs font-bold font-[family-name:var(--font-dm-sans)] transition-all ${
+                    pageSize === size
+                      ? "bg-ink text-surface shadow-[1px_1px_0px_#161616]"
+                      : "bg-surface text-ink hover:bg-muted"
+                  }`}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Numbered Page Buttons & Navigation */}
+          <div className="flex items-center gap-1.5 flex-wrap justify-center">
+            {/* First Page */}
+            <button
+              type="button"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+              title="Primeira página"
+              className="p-2 border-2 border-ink rounded-xl bg-surface hover:bg-muted disabled:opacity-30 disabled:pointer-events-none transition-all shadow-[2px_2px_0px_#161616] hover:shadow-none"
+            >
+              <ChevronsLeft className="w-4 h-4 text-ink" />
+              <span className="sr-only">Primeira Página</span>
+            </button>
+
+            {/* Prev Page */}
             <button
               type="button"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
+              title="Página anterior"
               className="p-2 border-2 border-ink rounded-xl bg-surface hover:bg-muted disabled:opacity-30 disabled:pointer-events-none transition-all shadow-[2px_2px_0px_#161616] hover:shadow-none"
             >
               <ChevronLeft className="w-4 h-4 text-ink" />
               <span className="sr-only">Anterior</span>
             </button>
 
+            {/* Numbered Buttons */}
+            {pageNumbers.map((p, idx) => {
+              if (p === "...") {
+                return (
+                  <span key={`dots-${idx}`} className="px-2 text-dim font-bold select-none">
+                    ...
+                  </span>
+                );
+              }
+
+              const isCurrent = currentPage === p;
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => table.setPageIndex(p)}
+                  className={`min-w-[34px] h-[34px] px-2.5 rounded-xl border-2 border-ink text-xs font-black font-[family-name:var(--font-oswald)] transition-all shadow-[2px_2px_0px_#161616] ${
+                    isCurrent
+                      ? "bg-accent-lime text-ink -translate-y-0.5"
+                      : "bg-surface text-ink hover:bg-muted hover:translate-y-0"
+                  }`}
+                >
+                  {p + 1}
+                </button>
+              );
+            })}
+
+            {/* Next Page */}
             <button
               type="button"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
+              title="Próxima página"
               className="p-2 border-2 border-ink rounded-xl bg-surface hover:bg-muted disabled:opacity-30 disabled:pointer-events-none transition-all shadow-[2px_2px_0px_#161616] hover:shadow-none"
             >
               <ChevronRight className="w-4 h-4 text-ink" />
               <span className="sr-only">Próxima</span>
+            </button>
+
+            {/* Last Page */}
+            <button
+              type="button"
+              onClick={() => table.setPageIndex(pageCount - 1)}
+              disabled={!table.getCanNextPage()}
+              title="Última página"
+              className="p-2 border-2 border-ink rounded-xl bg-surface hover:bg-muted disabled:opacity-30 disabled:pointer-events-none transition-all shadow-[2px_2px_0px_#161616] hover:shadow-none"
+            >
+              <ChevronsRight className="w-4 h-4 text-ink" />
+              <span className="sr-only">Última Página</span>
             </button>
           </div>
         </div>

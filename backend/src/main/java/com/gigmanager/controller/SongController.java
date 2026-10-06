@@ -1,5 +1,6 @@
 package com.gigmanager.controller;
 
+import com.gigmanager.controller.dto.PageResponse;
 import com.gigmanager.controller.dto.RepresentativeLinkDTO;
 import com.gigmanager.controller.dto.SongDTO;
 import com.gigmanager.domain.Representative;
@@ -11,6 +12,10 @@ import com.gigmanager.repository.RepresentativeRepository;
 import com.gigmanager.repository.RepresentativeSongRepository;
 import com.gigmanager.repository.SongRepository;
 import com.gigmanager.service.PdfService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -79,17 +84,51 @@ public class SongController {
     }
 
     @GetMapping
-    public List<SongDTO> getAllSongs() {
-        List<Song> songs = songRepository.findAll();
+    public ResponseEntity<?> getAllSongs(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(defaultValue = "title,asc") String sort
+    ) {
         List<RepresentativeSong> allRepSongs = representativeSongRepository.findAll();
-
         Map<UUID, List<RepresentativeSong>> repSongsBySongId = allRepSongs.stream()
                 .filter(rs -> rs.getSong() != null && rs.getSong().getId() != null)
                 .collect(Collectors.groupingBy(rs -> rs.getSong().getId()));
 
-        return songs.stream()
+        if (page == null && size == null) {
+            List<Song> songs = songRepository.findAll(Sort.by(Sort.Direction.ASC, "title"));
+            List<SongDTO> dtos = songs.stream()
+                    .map(s -> convertToDTO(s, repSongsBySongId.getOrDefault(s.getId(), List.of())))
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(dtos);
+        }
+
+        int pageNum = page != null ? Math.max(0, page) : 0;
+        int pageSize = size != null ? Math.max(1, size) : 25;
+
+        String[] sortParts = sort.split(",");
+        String sortField = sortParts[0];
+        Sort.Direction direction = (sortParts.length > 1 && sortParts[1].equalsIgnoreCase("desc"))
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+
+        Pageable pageable = PageRequest.of(pageNum, pageSize, Sort.by(direction, sortField));
+        Page<Song> songPage = songRepository.findAll(pageable);
+
+        List<SongDTO> content = songPage.getContent().stream()
                 .map(s -> convertToDTO(s, repSongsBySongId.getOrDefault(s.getId(), List.of())))
                 .collect(Collectors.toList());
+
+        PageResponse<SongDTO> pageResponse = PageResponse.<SongDTO>builder()
+                .content(content)
+                .pageNumber(songPage.getNumber())
+                .pageSize(songPage.getSize())
+                .totalElements(songPage.getTotalElements())
+                .totalPages(songPage.getTotalPages())
+                .first(songPage.isFirst())
+                .last(songPage.isLast())
+                .build();
+
+        return ResponseEntity.ok(pageResponse);
     }
 
     @GetMapping("/{id}")
