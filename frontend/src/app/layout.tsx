@@ -8,8 +8,13 @@ const dmSans = DM_Sans({ subsets: ["latin"], variable: '--font-dm-sans' });
 const oswald = Oswald({ subsets: ["latin"], variable: '--font-oswald' });
 
 export const metadata: Metadata = {
-  title: "GigManager & Repertoire Studio",
-  description: "Manage your gigs and repertoire",
+  title: "Caixa de Repertório • Gestão Central de Gigs & Acervo",
+  description: "Organize seu acervo de músicas, cantores, projetos, rotinas de estudo diário e escalas de shows.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
