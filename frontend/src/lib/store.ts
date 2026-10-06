@@ -23,6 +23,21 @@ export type Representative = {
   active?: boolean;
 };
 
+export type Intersection = {
+  representativeName: string;
+  performanceKey: string;
+};
+
+export type RepresentativeSong = {
+  songId: string;
+  title: string;
+  composer: string;
+  genre: string;
+  masteryLevel: number;
+  performanceKey: string;
+  intersections: Intersection[];
+};
+
 export type GigItem = {
   songTitle: string;
   performanceKey: string;
@@ -48,12 +63,17 @@ export type Stats = {
 };
 
 interface AppState {
-  // State
+  // Hydration state
+  hasHydrated: boolean;
+  setHasHydrated: (state: boolean) => void;
+
+  // Cached data
   songs: Song[];
   representatives: Representative[];
+  representativeSongsCache: Record<string, RepresentativeSong[]>;
   gigs: Gig[];
   stats: Stats | null;
-  
+
   // Cache Timestamps (ms)
   lastFetchedSongs: number | null;
   lastFetchedRepresentatives: number | null;
@@ -73,8 +93,9 @@ interface AppState {
   deleteSong: (id: string) => Promise<void>;
   updateMastery: (id: string, level: number) => Promise<void>;
 
-  // Actions - Representatives
+  // Actions - Representatives & Exclusive Songs
   fetchRepresentatives: (force?: boolean) => Promise<Representative[]>;
+  fetchRepresentativeSongs: (representativeId: string, force?: boolean) => Promise<RepresentativeSong[]>;
 
   // Actions - Gigs
   fetchGigs: (force?: boolean) => Promise<Gig[]>;
@@ -82,17 +103,23 @@ interface AppState {
   // Actions - Stats
   fetchStats: (force?: boolean) => Promise<Stats | null>;
 
-  // Cache Invalidation
-  invalidateCache: (key?: "songs" | "representatives" | "gigs" | "stats") => void;
+  // Cache Invalidation & Manual Reset
+  invalidateCache: (key?: "songs" | "representatives" | "gigs" | "stats" | "all") => void;
+  clearAllCache: () => void;
 }
 
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
+// 1 hour cache TTL: avoids repeated database hits while keeping data fresh
+const CACHE_TTL = 60 * 60 * 1000;
 
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
+      hasHydrated: false,
+      setHasHydrated: (state: boolean) => set({ hasHydrated: state }),
+
       songs: [],
       representatives: [],
+      representativeSongsCache: {},
       gigs: [],
       stats: null,
 
@@ -106,13 +133,14 @@ export const useAppStore = create<AppState>()(
       isLoadingGigs: false,
       isLoadingStats: false,
 
-      // --- SONGS ---
+      // --- SONGS (Avoids re-fetching from DB if already in LocalStorage) ---
       fetchSongs: async (force = false) => {
         const { songs, lastFetchedSongs, isLoadingSongs } = get();
         const now = Date.now();
-        const isFresh = lastFetchedSongs && now - lastFetchedSongs < CACHE_TTL;
+        const isFresh = lastFetchedSongs && (now - lastFetchedSongs < CACHE_TTL);
 
-        if (!force && isFresh && songs.length > 0) {
+        // If not forced and we have cached songs, return immediately with zero database calls!
+        if (!force && songs.length > 0 && isFresh) {
           return songs;
         }
 
@@ -148,7 +176,7 @@ export const useAppStore = create<AppState>()(
         if (!res.ok) throw new Error("Falha ao cadastrar música no servidor.");
         const created: Song = await res.json();
 
-        // Optimistically update local songs cache
+        // Immediately update LocalStorage cache
         set((state) => ({
           songs: [created, ...state.songs],
           lastFetchedSongs: Date.now(),
@@ -177,6 +205,7 @@ export const useAppStore = create<AppState>()(
         if (!res.ok) throw new Error("Falha ao atualizar música no servidor.");
         const updated: Song = await res.json();
 
+        // Immediately update LocalStorage cache
         set((state) => ({
           songs: state.songs.map((s) => (s.id === id ? updated : s)),
           lastFetchedSongs: Date.now(),
@@ -193,6 +222,7 @@ export const useAppStore = create<AppState>()(
 
         if (!res.ok) throw new Error("Falha ao excluir música do servidor.");
 
+        // Immediately update LocalStorage cache
         set((state) => ({
           songs: state.songs.filter((s) => s.id !== id),
           lastFetchedSongs: Date.now(),
@@ -215,7 +245,7 @@ export const useAppStore = create<AppState>()(
         const wasLevel5 = target?.masteryLevel === 5;
         const isLevel5 = level === 5;
 
-        // Optimistic cache update
+        // Optimistic LocalStorage cache update
         set((state) => ({
           songs: state.songs.map((s) =>
             s.id === id ? { ...s, masteryLevel: level } : s
@@ -243,14 +273,14 @@ export const useAppStore = create<AppState>()(
         }
       },
 
-      // --- REPRESENTATIVES ---
+      // --- REPRESENTATIVES & CACHED INTERSECTIONS ---
       fetchRepresentatives: async (force = false) => {
         const { representatives, lastFetchedRepresentatives } = get();
         const now = Date.now();
         const isFresh =
           lastFetchedRepresentatives && now - lastFetchedRepresentatives < CACHE_TTL;
 
-        if (!force && isFresh && representatives.length > 0) {
+        if (!force && representatives.length > 0 && isFresh) {
           return representatives;
         }
 
@@ -274,13 +304,40 @@ export const useAppStore = create<AppState>()(
         return get().representatives;
       },
 
+      fetchRepresentativeSongs: async (representativeId: string, force = false) => {
+        const { representativeSongsCache } = get();
+        const cached = representativeSongsCache[representativeId];
+
+        // Return from LocalStorage cache instantly if available!
+        if (!force && cached && cached.length > 0) {
+          return cached;
+        }
+
+        try {
+          const res = await fetch(`${API_URL}/api/representatives/${representativeId}/songs`);
+          if (res.ok) {
+            const data: RepresentativeSong[] = await res.json();
+            set((state) => ({
+              representativeSongsCache: {
+                ...state.representativeSongsCache,
+                [representativeId]: data,
+              },
+            }));
+            return data;
+          }
+        } catch (err) {
+          console.error(`[useAppStore] Error fetching songs for representative ${representativeId}:`, err);
+        }
+        return cached || [];
+      },
+
       // --- GIGS ---
       fetchGigs: async (force = false) => {
         const { gigs, lastFetchedGigs } = get();
         const now = Date.now();
         const isFresh = lastFetchedGigs && now - lastFetchedGigs < CACHE_TTL;
 
-        if (!force && isFresh && gigs.length > 0) {
+        if (!force && gigs.length > 0 && isFresh) {
           return gigs;
         }
 
@@ -310,7 +367,7 @@ export const useAppStore = create<AppState>()(
         const now = Date.now();
         const isFresh = lastFetchedStats && now - lastFetchedStats < CACHE_TTL;
 
-        if (!force && isFresh && stats !== null) {
+        if (!force && stats !== null && isFresh) {
           return stats;
         }
 
@@ -334,17 +391,18 @@ export const useAppStore = create<AppState>()(
         return get().stats;
       },
 
-      // --- CACHE INVALIDATION ---
+      // --- CACHE MANAGEMENT ---
       invalidateCache: (key) => {
-        if (!key) {
+        if (!key || key === "all") {
           set({
             lastFetchedSongs: null,
             lastFetchedRepresentatives: null,
+            representativeSongsCache: {},
             lastFetchedGigs: null,
             lastFetchedStats: null,
           });
         } else if (key === "songs") {
-          set({ lastFetchedSongs: null });
+          set({ lastFetchedSongs: null, representativeSongsCache: {} });
         } else if (key === "representatives") {
           set({ lastFetchedRepresentatives: null });
         } else if (key === "gigs") {
@@ -353,13 +411,34 @@ export const useAppStore = create<AppState>()(
           set({ lastFetchedStats: null });
         }
       },
+
+      clearAllCache: () => {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("caixa_repertorio_cache_v1");
+        }
+        set({
+          songs: [],
+          representatives: [],
+          representativeSongsCache: {},
+          gigs: [],
+          stats: null,
+          lastFetchedSongs: null,
+          lastFetchedRepresentatives: null,
+          lastFetchedGigs: null,
+          lastFetchedStats: null,
+        });
+      },
     }),
     {
       name: "caixa_repertorio_cache_v1",
       storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
       partialize: (state) => ({
         songs: state.songs,
         representatives: state.representatives,
+        representativeSongsCache: state.representativeSongsCache,
         gigs: state.gigs,
         stats: state.stats,
         lastFetchedSongs: state.lastFetchedSongs,

@@ -25,6 +25,9 @@ type Song = {
 export default function RepresentativesPage() {
   const representatives = useAppStore((state) => state.representatives);
   const fetchRepresentatives = useAppStore((state) => state.fetchRepresentatives);
+  const fetchRepresentativeSongs = useAppStore((state) => state.fetchRepresentativeSongs);
+  const representativeSongsCache = useAppStore((state) => state.representativeSongsCache);
+
   const [selectedRep, setSelectedRep] = useState<Representative | null>(null);
   const [songs, setSongs] = useState<Song[]>([]);
   const [isLoadingSongs, setIsLoadingSongs] = useState(false);
@@ -36,14 +39,18 @@ export default function RepresentativesPage() {
 
   const openModal = async (rep: Representative) => {
     setSelectedRep(rep);
-    setIsLoadingSongs(true);
+    // Check if we already have it in localStorage cache
+    const cached = representativeSongsCache[rep.id];
+    if (cached && cached.length > 0) {
+      setSongs(cached as any);
+      setIsLoadingSongs(false);
+    } else {
+      setIsLoadingSongs(true);
+    }
+
     try {
-      const API_URL = getApiBaseUrl();
-      const res = await fetch(`${API_URL}/api/representatives/${rep.id}/songs`);
-      if (res.ok) {
-        const data = await res.json();
-        setSongs(data);
-      }
+      const data = await fetchRepresentativeSongs(rep.id);
+      setSongs(data as any);
     } catch (err) {
       console.error(err);
     } finally {
