@@ -107,7 +107,8 @@ public class DailyPracticeScheduler {
             System.out.println("[DailyPracticeScheduler] Successfully sent daily practice email to " + targetEmail);
             return true;
         } catch (Exception e) {
-            System.err.println("[DailyPracticeScheduler] Failed to send email: " + e.getMessage());
+            System.err.println("[DailyPracticeScheduler] Failed to send email to " + targetEmail + ": " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }

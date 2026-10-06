@@ -18,14 +18,20 @@ spring:
   mail:
     host: ${SPRING_MAIL_HOST:smtp.gmail.com}
     port: ${SPRING_MAIL_PORT:587}
-    username: ${SPRING_MAIL_USERNAME:noreply@example.com}
-    password: ${SPRING_MAIL_PASSWORD:changeme}
+    username: ${SPRING_MAIL_USERNAME:jorgesoares2997@gmail.com}
+    password: ${SPRING_MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
           auth: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:true}
           starttls:
             enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:true}
+            required: true
+          ssl:
+            trust: "*"
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
 
 evolution-api:
   url: ${EVOLUTION_API_URL:https://placeholder.example.com}
