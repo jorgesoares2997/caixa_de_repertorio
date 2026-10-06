@@ -5,6 +5,7 @@ import { X, User, Music } from "lucide-react";
 import { StickerPillButton } from "@/components/StickerPillButton";
 import { MasteryRating } from "@/components/MasteryRating";
 import { useAppStore, Representative } from "@/lib/store";
+import { getApiBaseUrl } from "@/lib/utils";
 
 type Intersection = {
   representativeName: string;
@@ -37,7 +38,7 @@ export default function RepresentativesPage() {
     setSelectedRep(rep);
     setIsLoadingSongs(true);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const API_URL = getApiBaseUrl();
       const res = await fetch(`${API_URL}/api/representatives/${rep.id}/songs`);
       if (res.ok) {
         const data = await res.json();
@@ -54,7 +55,7 @@ export default function RepresentativesPage() {
     if (!selectedRep) return;
     setIsExporting(true);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const API_URL = getApiBaseUrl();
       const response = await fetch(`${API_URL}/api/representatives/${selectedRep.id}/export-pdf?groupBy=COMPOSER&sortBy=TITLE`);
       if (!response.ok) throw new Error("Falha ao exportar PDF");
       

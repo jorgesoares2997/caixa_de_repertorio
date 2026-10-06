@@ -6,8 +6,9 @@ import { motion } from "framer-motion";
 import { Calendar, MapPin, Mic2, FileDown, Send, Plus } from "lucide-react";
 import Link from "next/link";
 import { useAppStore, Gig } from "@/lib/store";
+import { getApiBaseUrl } from "@/lib/utils";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API_URL = getApiBaseUrl();
 
 export default function GigsPage() {
   const gigs = useAppStore((state) => state.gigs);

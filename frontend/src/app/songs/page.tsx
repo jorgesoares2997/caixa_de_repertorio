@@ -33,6 +33,7 @@ import { SongFormModal, SongData } from "@/components/SongFormModal";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { SongDetailModal } from "@/components/SongDetailModal";
 import { useAppStore, Song } from "@/lib/store";
+import { getApiBaseUrl } from "@/lib/utils";
 
 const columnHelper = createColumnHelper<Song>();
 
@@ -59,7 +60,7 @@ export default function SongsPage() {
   const [viewingSong, setViewingSong] = useState<Song | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+  const API_URL = getApiBaseUrl();
 
   useEffect(() => {
     fetchSongs();

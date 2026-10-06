@@ -5,8 +5,9 @@ import { Search, Plus, GripVertical, X, Save, Send } from "lucide-react";
 import { StickerPillButton } from "@/components/StickerPillButton";
 import { useRouter } from "next/navigation";
 import { useAppStore, Song, Representative } from "@/lib/store";
+import { getApiBaseUrl } from "@/lib/utils";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API_URL = getApiBaseUrl();
 
 type SetlistItem = Song & {
   uid: string;
