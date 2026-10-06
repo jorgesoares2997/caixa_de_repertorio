@@ -1,8 +1,13 @@
 package com.gigmanager.controller;
 
+import com.gigmanager.controller.dto.RepresentativeLinkDTO;
+import com.gigmanager.controller.dto.SongDTO;
+import com.gigmanager.domain.Representative;
+import com.gigmanager.domain.RepresentativeSong;
 import com.gigmanager.domain.Song;
 import com.gigmanager.repository.DailyPracticeLogRepository;
 import com.gigmanager.repository.GigItemRepository;
+import com.gigmanager.repository.RepresentativeRepository;
 import com.gigmanager.repository.RepresentativeSongRepository;
 import com.gigmanager.repository.SongRepository;
 import com.gigmanager.service.PdfService;
@@ -12,9 +17,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/songs")
@@ -22,6 +29,7 @@ import java.util.UUID;
 public class SongController {
 
     private final SongRepository songRepository;
+    private final RepresentativeRepository representativeRepository;
     private final RepresentativeSongRepository representativeSongRepository;
     private final GigItemRepository gigItemRepository;
     private final DailyPracticeLogRepository dailyPracticeLogRepository;
@@ -29,50 +37,149 @@ public class SongController {
 
     public SongController(
             SongRepository songRepository,
+            RepresentativeRepository representativeRepository,
             RepresentativeSongRepository representativeSongRepository,
             GigItemRepository gigItemRepository,
             DailyPracticeLogRepository dailyPracticeLogRepository,
             PdfService pdfService
     ) {
         this.songRepository = songRepository;
+        this.representativeRepository = representativeRepository;
         this.representativeSongRepository = representativeSongRepository;
         this.gigItemRepository = gigItemRepository;
         this.dailyPracticeLogRepository = dailyPracticeLogRepository;
         this.pdfService = pdfService;
     }
 
+    private SongDTO convertToDTO(Song song, List<RepresentativeSong> repSongs) {
+        List<RepresentativeLinkDTO> linkDTOs = new ArrayList<>();
+        if (repSongs != null) {
+            for (RepresentativeSong rs : repSongs) {
+                linkDTOs.add(RepresentativeLinkDTO.builder()
+                        .representativeId(rs.getRepresentative().getId())
+                        .representativeName(rs.getRepresentative().getName())
+                        .performanceKey(rs.getPerformanceKey() != null ? rs.getPerformanceKey() : song.getOriginalKey())
+                        .specificNotes(rs.getSpecificNotes())
+                        .build());
+            }
+        }
+
+        return SongDTO.builder()
+                .id(song.getId())
+                .title(song.getTitle())
+                .composer(song.getComposer())
+                .genre(song.getGenre())
+                .originalKey(song.getOriginalKey())
+                .masteryLevel(song.getMasteryLevel())
+                .tempoBpm(song.getTempoBpm())
+                .notes(song.getNotes())
+                .lastPracticedAt(song.getLastPracticedAt())
+                .representativeLinks(linkDTOs)
+                .build();
+    }
+
     @GetMapping
-    public List<Song> getAllSongs() {
-        return songRepository.findAll();
+    public List<SongDTO> getAllSongs() {
+        List<Song> songs = songRepository.findAll();
+        List<RepresentativeSong> allRepSongs = representativeSongRepository.findAll();
+
+        Map<UUID, List<RepresentativeSong>> repSongsBySongId = allRepSongs.stream()
+                .filter(rs -> rs.getSong() != null && rs.getSong().getId() != null)
+                .collect(Collectors.groupingBy(rs -> rs.getSong().getId()));
+
+        return songs.stream()
+                .map(s -> convertToDTO(s, repSongsBySongId.getOrDefault(s.getId(), List.of())))
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Song> getSongById(@PathVariable UUID id) {
+    public ResponseEntity<SongDTO> getSongById(@PathVariable UUID id) {
         return songRepository.findById(id)
-                .map(ResponseEntity::ok)
+                .map(song -> {
+                    List<RepresentativeSong> repSongs = representativeSongRepository.findBySongIdWithRepresentative(id);
+                    return ResponseEntity.ok(convertToDTO(song, repSongs));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @Transactional
     @PostMapping
-    public Song createSong(@RequestBody Song song) {
-        if (song.getMasteryLevel() == null) {
-            song.setMasteryLevel(3);
+    public ResponseEntity<SongDTO> createSong(@RequestBody SongDTO songDTO) {
+        Song song = Song.builder()
+                .title(songDTO.getTitle())
+                .composer(songDTO.getComposer())
+                .genre(songDTO.getGenre())
+                .originalKey(songDTO.getOriginalKey() != null ? songDTO.getOriginalKey() : "C")
+                .masteryLevel(songDTO.getMasteryLevel() != null ? songDTO.getMasteryLevel() : 3)
+                .tempoBpm(songDTO.getTempoBpm())
+                .notes(songDTO.getNotes())
+                .build();
+
+        Song saved = songRepository.save(song);
+        List<RepresentativeSong> createdRepSongs = new ArrayList<>();
+
+        if (songDTO.getRepresentativeLinks() != null && !songDTO.getRepresentativeLinks().isEmpty()) {
+            for (RepresentativeLinkDTO link : songDTO.getRepresentativeLinks()) {
+                if (link.getRepresentativeId() != null) {
+                    Representative rep = representativeRepository.findById(link.getRepresentativeId()).orElse(null);
+                    if (rep != null) {
+                        RepresentativeSong rs = RepresentativeSong.builder()
+                                .song(saved)
+                                .representative(rep)
+                                .performanceKey(link.getPerformanceKey() != null && !link.getPerformanceKey().isBlank()
+                                        ? link.getPerformanceKey()
+                                        : saved.getOriginalKey())
+                                .specificNotes(link.getSpecificNotes())
+                                .build();
+                        createdRepSongs.add(representativeSongRepository.save(rs));
+                    }
+                }
+            }
         }
-        return songRepository.save(song);
+
+        return ResponseEntity.ok(convertToDTO(saved, createdRepSongs));
     }
 
+    @Transactional
     @PutMapping("/{id}")
-    public ResponseEntity<Song> updateSong(@PathVariable UUID id, @RequestBody Song songDetails) {
+    public ResponseEntity<SongDTO> updateSong(@PathVariable UUID id, @RequestBody SongDTO songDTO) {
         return songRepository.findById(id)
                 .map(song -> {
-                    song.setTitle(songDetails.getTitle());
-                    song.setComposer(songDetails.getComposer());
-                    song.setGenre(songDetails.getGenre());
-                    song.setOriginalKey(songDetails.getOriginalKey());
-                    song.setMasteryLevel(songDetails.getMasteryLevel() != null ? songDetails.getMasteryLevel() : song.getMasteryLevel());
-                    song.setTempoBpm(songDetails.getTempoBpm());
-                    song.setNotes(songDetails.getNotes());
-                    return ResponseEntity.ok(songRepository.save(song));
+                    song.setTitle(songDTO.getTitle());
+                    song.setComposer(songDTO.getComposer());
+                    song.setGenre(songDTO.getGenre());
+                    song.setOriginalKey(songDTO.getOriginalKey());
+                    song.setMasteryLevel(songDTO.getMasteryLevel() != null ? songDTO.getMasteryLevel() : song.getMasteryLevel());
+                    song.setTempoBpm(songDTO.getTempoBpm());
+                    song.setNotes(songDTO.getNotes());
+                    Song saved = songRepository.save(song);
+
+                    // Update representative links if provided
+                    if (songDTO.getRepresentativeLinks() != null) {
+                        representativeSongRepository.deleteBySongId(id);
+                        List<RepresentativeSong> newRepSongs = new ArrayList<>();
+
+                        for (RepresentativeLinkDTO link : songDTO.getRepresentativeLinks()) {
+                            if (link.getRepresentativeId() != null) {
+                                Representative rep = representativeRepository.findById(link.getRepresentativeId()).orElse(null);
+                                if (rep != null) {
+                                    RepresentativeSong rs = RepresentativeSong.builder()
+                                            .song(saved)
+                                            .representative(rep)
+                                            .performanceKey(link.getPerformanceKey() != null && !link.getPerformanceKey().isBlank()
+                                                    ? link.getPerformanceKey()
+                                                    : saved.getOriginalKey())
+                                            .specificNotes(link.getSpecificNotes())
+                                            .build();
+                                    newRepSongs.add(representativeSongRepository.save(rs));
+                                }
+                            }
+                        }
+                        return ResponseEntity.ok(convertToDTO(saved, newRepSongs));
+                    }
+
+                    List<RepresentativeSong> existingRepSongs = representativeSongRepository.findBySongIdWithRepresentative(id);
+                    return ResponseEntity.ok(convertToDTO(saved, existingRepSongs));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }

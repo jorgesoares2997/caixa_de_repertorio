@@ -4,6 +4,13 @@ import { getApiBaseUrl } from "./utils";
 
 const API_URL = getApiBaseUrl();
 
+export type RepresentativeLink = {
+  representativeId: string;
+  representativeName?: string;
+  performanceKey: string;
+  specificNotes?: string;
+};
+
 export type Song = {
   id: string;
   title: string;
@@ -14,12 +21,14 @@ export type Song = {
   tempoBpm?: number;
   notes?: string;
   lastPracticedAt?: string;
+  representativeLinks?: RepresentativeLink[];
 };
 
 export type Representative = {
   id: string;
   name: string;
   type: string;
+  contactInfo?: string;
   active?: boolean;
 };
 
@@ -88,7 +97,7 @@ interface AppState {
 
   // Actions - Songs
   fetchSongs: (force?: boolean) => Promise<Song[]>;
-  addSong: (songData: Omit<Song, "id">, repIds?: string[]) => Promise<Song>;
+  addSong: (songData: Partial<Song>) => Promise<Song>;
   updateSong: (id: string, songData: Partial<Song>) => Promise<Song>;
   deleteSong: (id: string) => Promise<void>;
   updateMastery: (id: string, level: number) => Promise<void>;
@@ -96,6 +105,9 @@ interface AppState {
   // Actions - Representatives & Exclusive Songs
   fetchRepresentatives: (force?: boolean) => Promise<Representative[]>;
   fetchRepresentativeSongs: (representativeId: string, force?: boolean) => Promise<RepresentativeSong[]>;
+  addRepresentative: (repData: Partial<Representative>) => Promise<Representative>;
+  updateRepresentative: (id: string, repData: Partial<Representative>) => Promise<Representative>;
+  deleteRepresentative: (id: string) => Promise<void>;
 
   // Actions - Gigs
   fetchGigs: (force?: boolean) => Promise<Gig[]>;
@@ -133,13 +145,12 @@ export const useAppStore = create<AppState>()(
       isLoadingGigs: false,
       isLoadingStats: false,
 
-      // --- SONGS (Avoids re-fetching from DB if already in LocalStorage) ---
+      // --- SONGS ---
       fetchSongs: async (force = false) => {
         const { songs, lastFetchedSongs, isLoadingSongs } = get();
         const now = Date.now();
         const isFresh = lastFetchedSongs && (now - lastFetchedSongs < CACHE_TTL);
 
-        // If not forced and we have cached songs, return immediately with zero database calls!
         if (!force && songs.length > 0 && isFresh) {
           return songs;
         }
@@ -166,7 +177,7 @@ export const useAppStore = create<AppState>()(
         return get().songs;
       },
 
-      addSong: async (songData, repIds) => {
+      addSong: async (songData) => {
         const res = await fetch(`${API_URL}/api/songs`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -180,6 +191,7 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           songs: [created, ...state.songs],
           lastFetchedSongs: Date.now(),
+          representativeSongsCache: {}, // invalidate rep songs cache to reflect new links
           stats: state.stats
             ? {
                 ...state.stats,
@@ -205,10 +217,10 @@ export const useAppStore = create<AppState>()(
         if (!res.ok) throw new Error("Falha ao atualizar música no servidor.");
         const updated: Song = await res.json();
 
-        // Immediately update LocalStorage cache
         set((state) => ({
           songs: state.songs.map((s) => (s.id === id ? updated : s)),
           lastFetchedSongs: Date.now(),
+          representativeSongsCache: {}, // invalidate rep songs cache
         }));
 
         return updated;
@@ -222,10 +234,10 @@ export const useAppStore = create<AppState>()(
 
         if (!res.ok) throw new Error("Falha ao excluir música do servidor.");
 
-        // Immediately update LocalStorage cache
         set((state) => ({
           songs: state.songs.filter((s) => s.id !== id),
           lastFetchedSongs: Date.now(),
+          representativeSongsCache: {},
           stats: state.stats
             ? {
                 ...state.stats,
@@ -245,7 +257,6 @@ export const useAppStore = create<AppState>()(
         const wasLevel5 = target?.masteryLevel === 5;
         const isLevel5 = level === 5;
 
-        // Optimistic LocalStorage cache update
         set((state) => ({
           songs: state.songs.map((s) =>
             s.id === id ? { ...s, masteryLevel: level } : s
@@ -268,12 +279,11 @@ export const useAppStore = create<AppState>()(
           });
         } catch (err) {
           console.error("[useAppStore] Failed to update mastery level:", err);
-          // Rollback on failure
           set({ songs: prevSongs });
         }
       },
 
-      // --- REPRESENTATIVES & CACHED INTERSECTIONS ---
+      // --- REPRESENTATIVES ---
       fetchRepresentatives: async (force = false) => {
         const { representatives, lastFetchedRepresentatives } = get();
         const now = Date.now();
@@ -308,7 +318,6 @@ export const useAppStore = create<AppState>()(
         const { representativeSongsCache } = get();
         const cached = representativeSongsCache[representativeId];
 
-        // Return from LocalStorage cache instantly if available!
         if (!force && cached && cached.length > 0) {
           return cached;
         }
@@ -329,6 +338,48 @@ export const useAppStore = create<AppState>()(
           console.error(`[useAppStore] Error fetching songs for representative ${representativeId}:`, err);
         }
         return cached || [];
+      },
+
+      addRepresentative: async (repData) => {
+        const res = await fetch(`${API_URL}/api/representatives`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(repData),
+        });
+        if (!res.ok) throw new Error("Falha ao criar artista/projeto.");
+        const created: Representative = await res.json();
+        set((state) => ({
+          representatives: [...state.representatives, created],
+          lastFetchedRepresentatives: Date.now(),
+        }));
+        return created;
+      },
+
+      updateRepresentative: async (id, repData) => {
+        const res = await fetch(`${API_URL}/api/representatives/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(repData),
+        });
+        if (!res.ok) throw new Error("Falha ao atualizar artista/projeto.");
+        const updated: Representative = await res.json();
+        set((state) => ({
+          representatives: state.representatives.map((r) => (r.id === id ? updated : r)),
+          lastFetchedRepresentatives: Date.now(),
+        }));
+        return updated;
+      },
+
+      deleteRepresentative: async (id) => {
+        const res = await fetch(`${API_URL}/api/representatives/${id}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) throw new Error("Falha ao excluir artista/projeto.");
+        set((state) => ({
+          representatives: state.representatives.filter((r) => r.id !== id),
+          lastFetchedRepresentatives: Date.now(),
+          representativeSongsCache: {},
+        }));
       },
 
       // --- GIGS ---
@@ -404,7 +455,7 @@ export const useAppStore = create<AppState>()(
         } else if (key === "songs") {
           set({ lastFetchedSongs: null, representativeSongsCache: {} });
         } else if (key === "representatives") {
-          set({ lastFetchedRepresentatives: null });
+          set({ lastFetchedRepresentatives: null, representativeSongsCache: {} });
         } else if (key === "gigs") {
           set({ lastFetchedGigs: null });
         } else if (key === "stats") {

@@ -1,40 +1,61 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { StickerPillButton } from "@/components/StickerPillButton";
-import { Calendar } from "lucide-react";
+import { DailyPracticeModal } from "@/components/DailyPracticeModal";
+import { Calendar, Flame, Users, Music2, Mail, ArrowRight, Sparkles } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import Link from "next/link";
 
 export default function Dashboard() {
   const stats = useAppStore((state) => state.stats);
   const fetchStats = useAppStore((state) => state.fetchStats);
   const fetchSongs = useAppStore((state) => state.fetchSongs);
+  const fetchRepresentatives = useAppStore((state) => state.fetchRepresentatives);
+  const representatives = useAppStore((state) => state.representatives);
+
+  const [isPracticeOpen, setIsPracticeOpen] = useState(false);
 
   useEffect(() => {
     fetchStats();
     fetchSongs();
-  }, [fetchStats, fetchSongs]);
+    fetchRepresentatives();
+  }, [fetchStats, fetchSongs, fetchRepresentatives]);
 
   return (
-    <div className="flex flex-col gap-16 md:gap-24 font-sans animate-in fade-in slide-in-from-bottom-8 duration-700">
+    <div className="flex flex-col gap-14 md:gap-20 font-sans animate-in fade-in slide-in-from-bottom-8 duration-700 pb-16">
 
       {/* Hero */}
       <section className="flex flex-col items-center text-center px-4 max-w-4xl mx-auto mt-4">
-        <div className="inline-block bg-accent-orange text-surface font-bold uppercase tracking-widest text-xs px-4 py-1.5 rounded-full mb-8 border-2 border-ink -rotate-2 shadow-neo font-[family-name:var(--font-dm-sans)]">
-          Sistema Central de Gigs & Repertório
+        <div className="inline-flex items-center gap-2 bg-accent-orange text-surface font-bold uppercase tracking-widest text-xs px-4 py-1.5 rounded-full mb-6 border-2 border-ink -rotate-2 shadow-neo font-[family-name:var(--font-dm-sans)]">
+          <Sparkles className="w-3.5 h-3.5" /> Sistema Central de Gigs & Repertório
         </div>
 
-        <h1 className="text-5xl md:text-7xl lg:text-[5.5rem] font-black uppercase tracking-tight text-ink mb-8 leading-[0.95] font-[family-name:var(--font-oswald)]">
+        <h1 className="text-5xl md:text-7xl lg:text-[5.2rem] font-black uppercase tracking-tight text-ink mb-6 leading-[0.95] font-[family-name:var(--font-oswald)]">
           Seu repertório na <br className="hidden md:block" /> ponta dos dedos, <br className="hidden md:block" /> sem perder nenhum tom.
         </h1>
 
-        <p className="text-lg md:text-xl text-dim max-w-2xl mb-12 font-[family-name:var(--font-inter)] leading-relaxed">
-          Organize shows, repertório e estudos diários. Envie escalas direto no WhatsApp com 1 clique.
+        <p className="text-lg md:text-xl text-dim max-w-2xl mb-10 font-[family-name:var(--font-inter)] leading-relaxed">
+          Gerencie acervos, vincule repertório exclusivo a cada cantor, estude diariamente com rotinas inteligentes e gere setlists prontas.
         </p>
 
-        <StickerPillButton onClick={() => window.location.href = "/songs"}>
-          Acessar o Acervo Completo
-        </StickerPillButton>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <StickerPillButton
+            variant="lime"
+            onClick={() => window.location.href = "/songs"}
+            icon={<Music2 className="w-4 h-4 text-surface" />}
+          >
+            Acessar o Acervo Completo
+          </StickerPillButton>
+
+          <StickerPillButton
+            variant="orange"
+            onClick={() => setIsPracticeOpen(true)}
+            icon={<Flame className="w-4 h-4 text-surface fill-surface" />}
+          >
+            Estudo Diário de Hoje
+          </StickerPillButton>
+        </div>
       </section>
 
       {/* Metrics */}
@@ -42,13 +63,13 @@ export default function Dashboard() {
         <MetricCard
           title="Obras Únicas"
           value={stats ? String(stats.totalSongs) : "—"}
-          suffix="Músicas"
+          suffix="Músicas no Acervo"
           rotate="-rotate-2"
         />
         <MetricCard
-          title="Shows Futuros"
-          value={stats ? String(stats.upcomingGigs) : "—"}
-          suffix="Agendados"
+          title="Artistas & Projetos"
+          value={representatives.length > 0 ? String(representatives.length) : "6"}
+          suffix="Projetos Ativos"
           rotate="rotate-2"
         />
         <MetricCard
@@ -65,7 +86,40 @@ export default function Dashboard() {
         />
       </section>
 
-      {/* Special Banner */}
+      {/* Daily Study Routine Callout Banner */}
+      <section className="px-4 max-w-6xl mx-auto w-full">
+        <div className="bg-accent-lime rounded-3xl p-6 md:p-8 border-2 border-ink shadow-neo flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-ink text-accent-lime border-2 border-ink flex items-center justify-center shrink-0 shadow-[2px_2px_0px_#161616]">
+              <Flame className="w-8 h-8 fill-accent-lime" />
+            </div>
+            <div>
+              <div className="inline-block bg-ink text-surface px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider mb-1 font-[family-name:var(--font-dm-sans)]">
+                Algoritmo de Retenção
+              </div>
+              <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-ink font-[family-name:var(--font-oswald)]">
+                Rotina de Estudo Diário por E-mail
+              </h3>
+              <p className="text-xs md:text-sm text-ink/80 font-semibold mt-0.5">
+                Receba automaticamente 5 músicas selecionadas para praticar (2 aprendizado, 2 consolidação, 1 manutenção).
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0 w-full md:w-auto">
+            <StickerPillButton
+              variant="cherry"
+              onClick={() => setIsPracticeOpen(true)}
+              className="w-full md:w-auto justify-center"
+              icon={<Mail className="w-4 h-4 text-surface" />}
+            >
+              Ver Sessão & Disparar
+            </StickerPillButton>
+          </div>
+        </div>
+      </section>
+
+      {/* Special Gig Banner */}
       <section className="px-4 max-w-6xl mx-auto w-full">
         <div className="bg-ink rounded-3xl p-8 md:p-12 text-surface flex flex-col lg:flex-row items-center justify-between border-2 border-ink shadow-neo relative overflow-hidden">
           <div className="absolute -top-32 -right-32 w-96 h-96 bg-accent-cherry rounded-full blur-[80px] opacity-60 pointer-events-none" />
@@ -91,14 +145,14 @@ export default function Dashboard() {
                 <p className="font-black text-xl mb-1">Superstition</p>
                 <p className="text-sm text-dim font-medium">Stevie Wonder</p>
               </div>
-              <div className="font-bold text-accent-cherry bg-accent-cherry/10 border border-accent-cherry/20 px-3 py-1.5 rounded-lg text-lg">Ebm</div>
+              <div className="font-bold text-accent-cherry bg-accent-cherry/10 border border-accent-cherry/20 px-3 py-1.5 rounded-lg text-lg font-[family-name:var(--font-oswald)]">Ebm</div>
             </div>
             <div className="bg-surface text-ink px-6 py-5 rounded-2xl border-2 border-ink flex items-center justify-between gap-8 font-[family-name:var(--font-inter)] shadow-neo lg:ml-8 -rotate-2 hover:-translate-y-1 transition-transform">
               <div>
                 <p className="font-black text-xl mb-1">Sina</p>
                 <p className="text-sm text-dim font-medium">Djavan</p>
               </div>
-              <div className="font-bold text-accent-orange bg-accent-orange/10 border border-accent-orange/20 px-3 py-1.5 rounded-lg text-lg">G</div>
+              <div className="font-bold text-accent-orange bg-accent-orange/10 border border-accent-orange/20 px-3 py-1.5 rounded-lg text-lg font-[family-name:var(--font-oswald)]">G</div>
             </div>
             <StickerPillButton onClick={() => window.location.href = "/gigs/new"}>
               <Calendar className="w-4 h-4 mr-1 inline" /> Criar Novo Show
@@ -106,6 +160,12 @@ export default function Dashboard() {
           </div>
         </div>
       </section>
+
+      {/* Modal: Estudo Diário */}
+      <DailyPracticeModal
+        isOpen={isPracticeOpen}
+        onClose={() => setIsPracticeOpen(false)}
+      />
     </div>
   );
 }

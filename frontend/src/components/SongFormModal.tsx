@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Music, Check, UserCheck, Sparkles, Activity } from "lucide-react";
+import { X, Music, Check, UserCheck, Plus, Trash2, KeyRound, FileText } from "lucide-react";
 import { MasteryRating } from "./MasteryRating";
 import { StickerPillButton } from "./StickerPillButton";
-import { useAppStore, Representative } from "@/lib/store";
+import { useAppStore, Representative, RepresentativeLink } from "@/lib/store";
 
 export type SongData = {
   id?: string;
@@ -16,6 +16,7 @@ export type SongData = {
   masteryLevel?: number;
   tempoBpm?: number;
   notes?: string;
+  representativeLinks?: RepresentativeLink[];
 };
 
 interface SongFormModalProps {
@@ -61,10 +62,14 @@ export function SongFormModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
+  // Representative links state: Map of repId -> { performanceKey, specificNotes }
+  const [repLinksMap, setRepLinksMap] = useState<
+    Record<string, { performanceKey: string; specificNotes: string }>
+  >({});
+
   // Representatives from Zustand cache
   const representatives = useAppStore((state) => state.representatives);
   const fetchRepresentatives = useAppStore((state) => state.fetchRepresentatives);
-  const [selectedReps, setSelectedReps] = useState<string[]>([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -81,6 +86,18 @@ export function SongFormModal({
       setMasteryLevel(initialData.masteryLevel || 3);
       setTempoBpm(initialData.tempoBpm || "");
       setNotes(initialData.notes || "");
+
+      // Populate existing representative links
+      const initialMap: Record<string, { performanceKey: string; specificNotes: string }> = {};
+      if (initialData.representativeLinks && Array.isArray(initialData.representativeLinks)) {
+        initialData.representativeLinks.forEach((link) => {
+          initialMap[link.representativeId] = {
+            performanceKey: link.performanceKey || initialData.originalKey || "C",
+            specificNotes: link.specificNotes || "",
+          };
+        });
+      }
+      setRepLinksMap(initialMap);
     } else {
       setTitle("");
       setComposer("");
@@ -89,10 +106,45 @@ export function SongFormModal({
       setMasteryLevel(3);
       setTempoBpm("");
       setNotes("");
-      setSelectedReps([]);
+      setRepLinksMap({});
     }
     setErrorMsg("");
   }, [initialData, mode, isOpen]);
+
+  const toggleRepresentative = (repId: string) => {
+    setRepLinksMap((prev) => {
+      const next = { ...prev };
+      if (next[repId]) {
+        delete next[repId];
+      } else {
+        next[repId] = {
+          performanceKey: originalKey || "C",
+          specificNotes: "",
+        };
+      }
+      return next;
+    });
+  };
+
+  const handleUpdateRepKey = (repId: string, newKey: string) => {
+    setRepLinksMap((prev) => ({
+      ...prev,
+      [repId]: {
+        ...prev[repId],
+        performanceKey: newKey,
+      },
+    }));
+  };
+
+  const handleUpdateRepNotes = (repId: string, repNotes: string) => {
+    setRepLinksMap((prev) => ({
+      ...prev,
+      [repId]: {
+        ...prev[repId],
+        specificNotes: repNotes,
+      },
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,6 +157,18 @@ export function SongFormModal({
     setErrorMsg("");
 
     try {
+      const linksPayload: RepresentativeLink[] = Object.entries(repLinksMap).map(
+        ([repId, linkData]) => {
+          const rep = representatives.find((r) => r.id === repId);
+          return {
+            representativeId: repId,
+            representativeName: rep?.name,
+            performanceKey: linkData.performanceKey || originalKey || "C",
+            specificNotes: linkData.specificNotes || undefined,
+          };
+        }
+      );
+
       const songPayload: SongData = {
         ...(initialData?.id ? { id: initialData.id } : {}),
         title: title.trim(),
@@ -114,21 +178,17 @@ export function SongFormModal({
         masteryLevel,
         tempoBpm: tempoBpm ? Number(tempoBpm) : undefined,
         notes: notes.trim() || undefined,
+        representativeLinks: linksPayload,
       };
 
-      await onSave(songPayload, selectedReps);
+      const selectedIds = Object.keys(repLinksMap);
+      await onSave(songPayload, selectedIds);
       onClose();
     } catch (err: any) {
       setErrorMsg(err?.message || "Erro ao salvar a música. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const toggleRepresentative = (repId: string) => {
-    setSelectedReps((prev) =>
-      prev.includes(repId) ? prev.filter((id) => id !== repId) : [...prev, repId]
-    );
   };
 
   if (!isOpen) return null;
@@ -164,7 +224,7 @@ export function SongFormModal({
                   {mode === "create" ? "Adicionar Nova Música" : "Revisar / Editar Música"}
                 </h3>
                 <p className="text-xs font-bold text-dim uppercase tracking-wider font-[family-name:var(--font-dm-sans)]">
-                  {mode === "create" ? "Cadastre no acervo central" : "Atualize tom, domínio e notas"}
+                  {mode === "create" ? "Cadastre no acervo central e vincule artistas" : "Atualize tom, domínio e cantores vinculados"}
                 </p>
               </div>
             </div>
@@ -256,7 +316,10 @@ export function SongFormModal({
                 </label>
                 <select
                   value={originalKey}
-                  onChange={(e) => setOriginalKey(e.target.value)}
+                  onChange={(e) => {
+                    const newKey = e.target.value;
+                    setOriginalKey(newKey);
+                  }}
                   className="w-full bg-surface border-2 border-ink rounded-xl py-2.5 px-3 font-black text-accent-cherry text-sm shadow-[2px_2px_0px_#161616] focus:outline-none font-[family-name:var(--font-oswald)]"
                 >
                   {COMMON_KEYS.map((k) => (
@@ -299,15 +362,27 @@ export function SongFormModal({
               </div>
             </div>
 
-            {/* Representative Projects Selection (for create mode) */}
+            {/* Representative Linking Section */}
             {representatives.length > 0 && (
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-dim mb-1.5 font-[family-name:var(--font-dm-sans)]">
-                  Vincular a Artistas / Projetos
-                </label>
+              <div className="bg-canvas border-2 border-ink rounded-2xl p-4 shadow-[2px_2px_0px_#161616] space-y-4">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-black uppercase tracking-wider text-ink font-[family-name:var(--font-dm-sans)]">
+                      Vincular a Artistas & Projetos
+                    </label>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-dim font-[family-name:var(--font-dm-sans)]">
+                      {Object.keys(repLinksMap).length} selecionado(s)
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-dim font-medium mt-0.5">
+                    Vincule a música a um ou mais representantes e ajuste o tom individual de execução.
+                  </p>
+                </div>
+
+                {/* Quick Toggle Pills */}
                 <div className="flex flex-wrap gap-2">
                   {representatives.map((rep) => {
-                    const isSelected = selectedReps.includes(rep.id);
+                    const isSelected = !!repLinksMap[rep.id];
                     return (
                       <button
                         key={rep.id}
@@ -315,23 +390,95 @@ export function SongFormModal({
                         onClick={() => toggleRepresentative(rep.id)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-ink text-xs font-bold uppercase tracking-wider transition-all font-[family-name:var(--font-dm-sans)] ${
                           isSelected
-                            ? "bg-accent-lavender text-ink shadow-[2px_2px_0px_#161616]"
+                            ? "bg-accent-lavender text-ink shadow-[2px_2px_0px_#161616] -translate-y-0.5"
                             : "bg-surface text-dim hover:text-ink hover:bg-muted"
                         }`}
                       >
                         <UserCheck className={`w-3.5 h-3.5 ${isSelected ? "text-ink" : "text-dim"}`} />
                         {rep.name}
+                        {isSelected && <span className="ml-1 text-[10px] bg-ink text-surface rounded px-1">✓</span>}
                       </button>
                     );
                   })}
                 </div>
+
+                {/* Per-Representative Key & Notes Customizer */}
+                {Object.keys(repLinksMap).length > 0 && (
+                  <div className="space-y-3 pt-2 border-t border-ink/20">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-dim block font-[family-name:var(--font-dm-sans)]">
+                      Configuração de Tom por Representante:
+                    </span>
+
+                    {Object.entries(repLinksMap).map(([repId, linkData]) => {
+                      const rep = representatives.find((r) => r.id === repId);
+                      if (!rep) return null;
+
+                      return (
+                        <div
+                          key={repId}
+                          className="bg-surface border-2 border-ink rounded-xl p-3 shadow-[2px_2px_0px_#161616] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg bg-accent-lavender border border-ink flex items-center justify-center font-bold text-xs">
+                              {rep.name.charAt(0)}
+                            </div>
+                            <div>
+                              <span className="font-black text-sm uppercase text-ink font-[family-name:var(--font-oswald)]">
+                                {rep.name}
+                              </span>
+                              <span className="block text-[10px] font-bold uppercase tracking-wider text-dim font-[family-name:var(--font-dm-sans)]">
+                                {rep.type}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-bold text-dim uppercase tracking-wider font-[family-name:var(--font-dm-sans)]">
+                                Tom:
+                              </span>
+                              <select
+                                value={linkData.performanceKey}
+                                onChange={(e) => handleUpdateRepKey(repId, e.target.value)}
+                                className="bg-canvas border-2 border-ink rounded-lg py-1 px-2.5 font-black text-accent-cherry text-xs shadow-[1px_1px_0px_#161616] focus:outline-none font-[family-name:var(--font-oswald)]"
+                              >
+                                {COMMON_KEYS.map((k) => (
+                                  <option key={k} value={k}>
+                                    {k}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <input
+                              type="text"
+                              value={linkData.specificNotes}
+                              onChange={(e) => handleUpdateRepNotes(repId, e.target.value)}
+                              placeholder="Obs/Arranjo..."
+                              className="w-32 sm:w-40 bg-canvas border-2 border-ink rounded-lg py-1 px-2 text-xs font-semibold text-ink shadow-[1px_1px_0px_#161616] focus:outline-none"
+                            />
+
+                            <button
+                              type="button"
+                              onClick={() => toggleRepresentative(repId)}
+                              title="Remover vínculo"
+                              className="p-1 text-dim hover:text-accent-cherry transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
             {/* Notes / Cifra / Chords */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-dim mb-1.5 font-[family-name:var(--font-dm-sans)]">
-                Observações, Estrutura ou Cifra
+                Observações Gerais, Estrutura ou Cifra
               </label>
               <textarea
                 rows={4}

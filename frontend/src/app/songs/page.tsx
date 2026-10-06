@@ -25,13 +25,16 @@ import {
   ChevronRight,
   RefreshCw,
   Layers,
-  Filter
+  Filter,
+  Flame,
+  Users
 } from "lucide-react";
 import { MasteryRating } from "@/components/MasteryRating";
 import { StickerPillButton } from "@/components/StickerPillButton";
 import { SongFormModal, SongData } from "@/components/SongFormModal";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { SongDetailModal } from "@/components/SongDetailModal";
+import { DailyPracticeModal } from "@/components/DailyPracticeModal";
 import { useAppStore, Song } from "@/lib/store";
 import { getApiBaseUrl } from "@/lib/utils";
 
@@ -55,6 +58,7 @@ export default function SongsPage() {
 
   // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isPracticeOpen, setIsPracticeOpen] = useState(false);
   const [editingSong, setEditingSong] = useState<Song | null>(null);
   const [deletingSong, setDeletingSong] = useState<Song | null>(null);
   const [viewingSong, setViewingSong] = useState<Song | null>(null);
@@ -85,11 +89,11 @@ export default function SongsPage() {
   };
 
   // Create or Update Song
-  const handleSaveSong = async (songData: SongData, repIds?: string[]) => {
+  const handleSaveSong = async (songData: SongData) => {
     if (editingSong) {
-      await updateSong(editingSong.id, songData);
+      await updateSong(editingSong.id, songData as any);
     } else {
-      await addSong(songData as any, repIds);
+      await addSong(songData as any);
     }
   };
 
@@ -112,21 +116,33 @@ export default function SongsPage() {
     () => [
       columnHelper.accessor("title", {
         header: "Título da Obra",
-        cell: (info) => (
-          <div
-            className="cursor-pointer group flex flex-col"
-            onClick={() => setViewingSong(info.row.original)}
-          >
-            <span className="font-black text-lg text-ink font-[family-name:var(--font-oswald)] uppercase tracking-wide group-hover:text-accent-orange transition-colors">
-              {info.getValue()}
-            </span>
-            {info.row.original.notes && (
-              <span className="text-[11px] text-dim/70 truncate max-w-xs font-medium">
-                {info.row.original.notes}
-              </span>
-            )}
-          </div>
-        ),
+        cell: (info) => {
+          const song = info.row.original;
+          const links = song.representativeLinks || [];
+          return (
+            <div
+              className="cursor-pointer group flex flex-col"
+              onClick={() => setViewingSong(song)}
+            >
+              <div className="flex items-center gap-2">
+                <span className="font-black text-lg text-ink font-[family-name:var(--font-oswald)] uppercase tracking-wide group-hover:text-accent-orange transition-colors">
+                  {info.getValue()}
+                </span>
+                {links.length > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent-lavender/60 border border-ink/30 rounded-md text-[10px] font-black uppercase font-[family-name:var(--font-dm-sans)] text-ink">
+                    <Users className="w-2.5 h-2.5" />
+                    {links.length === 1 ? links[0].representativeName : `${links.length} artistas`}
+                  </span>
+                )}
+              </div>
+              {song.notes && (
+                <span className="text-[11px] text-dim/70 truncate max-w-xs font-medium">
+                  {song.notes}
+                </span>
+              )}
+            </div>
+          );
+        },
       }),
       columnHelper.accessor("composer", {
         header: "Compositor",
@@ -264,6 +280,14 @@ export default function SongsPage() {
             <RefreshCw className={`w-4 h-4 text-ink ${isLoadingSongs ? "animate-spin" : ""}`} />
             <span className="sr-only">Atualizar</span>
           </button>
+
+          <StickerPillButton
+            variant="orange"
+            onClick={() => setIsPracticeOpen(true)}
+            icon={<Flame className="w-4 h-4 text-surface fill-surface" />}
+          >
+            Estudo Diário
+          </StickerPillButton>
 
           <StickerPillButton
             variant="lavender"
@@ -429,6 +453,12 @@ export default function SongsPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal: Estudo Diário */}
+      <DailyPracticeModal
+        isOpen={isPracticeOpen}
+        onClose={() => setIsPracticeOpen(false)}
+      />
 
       {/* Modal: Adicionar Música */}
       <SongFormModal

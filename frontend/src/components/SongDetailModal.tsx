@@ -1,9 +1,10 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Music, UserCheck, Clock, FileText, Edit3, Trash2, Tag, KeyRound, ExternalLink } from "lucide-react";
+import { X, Music, UserCheck, Clock, FileText, Edit3, Trash2, Tag, KeyRound, ExternalLink, Users } from "lucide-react";
 import { MasteryRating } from "./MasteryRating";
 import { SongData } from "./SongFormModal";
+import { RepresentativeLink } from "@/lib/store";
 
 interface SongDetailModalProps {
   isOpen: boolean;
@@ -21,6 +22,8 @@ export function SongDetailModal({
   onDelete,
 }: SongDetailModalProps) {
   if (!isOpen || !song) return null;
+
+  const repLinks = song.representativeLinks || [];
 
   return (
     <AnimatePresence>
@@ -95,6 +98,51 @@ export function SongDetailModal({
                   <MasteryRating level={song.masteryLevel || 0} size="sm" readOnly />
                 </div>
               </div>
+            </div>
+
+            {/* Linked Representatives Section */}
+            <div className="bg-canvas border-2 border-ink rounded-2xl p-4 shadow-[2px_2px_0px_#161616]">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-dim mb-3 font-[family-name:var(--font-dm-sans)]">
+                <Users className="w-4 h-4 text-ink" /> Artistas & Projetos Vinculados
+              </div>
+
+              {repLinks.length > 0 ? (
+                <div className="space-y-2">
+                  {repLinks.map((link, idx) => (
+                    <div
+                      key={link.representativeId || idx}
+                      className="bg-surface border-2 border-ink rounded-xl p-2.5 flex items-center justify-between gap-3 shadow-[1px_1px_0px_#161616]"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-md bg-accent-lavender border border-ink flex items-center justify-center font-bold text-xs">
+                          {link.representativeName?.charAt(0) || "A"}
+                        </div>
+                        <span className="font-black text-sm uppercase text-ink font-[family-name:var(--font-oswald)]">
+                          {link.representativeName || "Artista"}
+                        </span>
+                        {link.specificNotes && (
+                          <span className="text-[11px] text-dim font-medium ml-1">
+                            ({link.specificNotes})
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-dim font-[family-name:var(--font-dm-sans)]">
+                          Tom:
+                        </span>
+                        <span className="px-2 py-0.5 bg-accent-lime border border-ink rounded-md text-xs font-black font-[family-name:var(--font-oswald)] text-ink">
+                          {link.performanceKey || song.originalKey || "C"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-dim font-medium italic">
+                  Esta música ainda não foi vinculada a nenhum projeto ou cantor específico.
+                </p>
+              )}
             </div>
 
             {/* Notes / Cifra */}

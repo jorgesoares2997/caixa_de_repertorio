@@ -11,7 +11,8 @@ export function StickerPillButton({
   className,
   type = "button",
   variant = "lime",
-  icon
+  icon,
+  disabled = false,
 }: { 
   children: ReactNode; 
   onClick?: () => void;
@@ -19,6 +20,7 @@ export function StickerPillButton({
   type?: "button" | "submit" | "reset";
   variant?: "lime" | "orange" | "lavender" | "cherry" | "white" | "dark";
   icon?: ReactNode;
+  disabled?: boolean;
 }) {
   const variantStyles = {
     lime: "bg-accent-lime text-ink",
@@ -32,12 +34,14 @@ export function StickerPillButton({
   return (
     <motion.button
       type={type}
+      disabled={disabled}
       onClick={onClick}
-      whileHover={{ y: -2 }}
-      whileTap={{ y: 0 }}
+      whileHover={disabled ? undefined : { y: -2 }}
+      whileTap={disabled ? undefined : { y: 0 }}
       className={twMerge(
         "relative inline-flex items-center justify-between gap-3 border-2 border-ink rounded-xl py-2 px-4 shadow-neo cursor-pointer transition-all font-[family-name:var(--font-dm-sans)] font-bold text-xs md:text-sm uppercase tracking-wider select-none",
         variantStyles[variant] || variantStyles.lime,
+        disabled && "opacity-60 cursor-not-allowed pointer-events-none",
         className
       )}
     >

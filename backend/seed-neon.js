@@ -50,6 +50,13 @@ async function run() {
 
     await client.query('BEGIN');
 
+    // Clean existing songs and related associations for a fresh re-seed
+    console.log('Clearing existing songs and relations...');
+    await client.query('DELETE FROM representative_songs');
+    await client.query('DELETE FROM gig_items');
+    await client.query('DELETE FROM daily_practice_logs');
+    await client.query('DELETE FROM songs');
+
     for (const song of data) {
       const songId = crypto.randomUUID();
       const mastery = typeof song.mastery_level === 'number' && song.mastery_level >= 1 && song.mastery_level <= 5
