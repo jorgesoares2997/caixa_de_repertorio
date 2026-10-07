@@ -81,6 +81,8 @@ export default function RepresentativesPage() {
     type: "SINGER",
     contactInfo: "",
   });
+  const [isSavingRep, setIsSavingRep] = useState(false);
+  const [repErrorMsg, setRepErrorMsg] = useState("");
 
   useEffect(() => {
     fetchRepresentatives();
@@ -199,7 +201,13 @@ export default function RepresentativesPage() {
 
   const handleSaveRepresentative = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    if (!formData.name.trim()) {
+      setRepErrorMsg("O nome do artista ou projeto é obrigatório.");
+      return;
+    }
+
+    setIsSavingRep(true);
+    setRepErrorMsg("");
 
     try {
       if (editingRep) {
@@ -218,9 +226,12 @@ export default function RepresentativesPage() {
         setIsCreateOpen(false);
       }
       setFormData({ name: "", type: "SINGER", contactInfo: "" });
-    } catch (err) {
+      setRepErrorMsg("");
+    } catch (err: any) {
       console.error(err);
-      alert("Erro ao salvar projeto/artista.");
+      setRepErrorMsg(err?.message || "Erro ao salvar projeto/artista.");
+    } finally {
+      setIsSavingRep(false);
     }
   };
 
@@ -866,6 +877,12 @@ export default function RepresentativesPage() {
             </div>
 
             <form onSubmit={handleSaveRepresentative} className="p-6 space-y-4 bg-canvas">
+              {repErrorMsg && (
+                <div className="p-3 bg-accent-cherry/10 border-2 border-accent-cherry text-accent-cherry rounded-xl text-xs font-bold font-[family-name:var(--font-dm-sans)]">
+                  {repErrorMsg}
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-dim mb-1.5 font-[family-name:var(--font-dm-sans)]">
                   Nome do Artista ou Grupo <span className="text-accent-cherry">*</span>
@@ -923,8 +940,14 @@ export default function RepresentativesPage() {
                   Cancelar
                 </button>
 
-                <StickerPillButton type="submit" variant="lime" icon={<Check className="w-4 h-4 text-surface" />}>
-                  {editingRep ? "Salvar Alterações" : "Cadastrar Artista"}
+                <StickerPillButton
+                  type="submit"
+                  variant="lime"
+                  disabled={isSavingRep}
+                  className={isSavingRep ? "opacity-60 pointer-events-none" : ""}
+                  icon={<Check className="w-4 h-4 text-surface" />}
+                >
+                  {isSavingRep ? "Salvando..." : editingRep ? "Salvar Alterações" : "Cadastrar Artista"}
                 </StickerPillButton>
               </div>
             </form>

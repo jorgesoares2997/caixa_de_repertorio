@@ -385,10 +385,13 @@ export const useAppStore = create<AppState>()(
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(repData),
         });
-        if (!res.ok) throw new Error("Falha ao criar artista/projeto.");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => null);
+          throw new Error(errData?.message || "Falha ao criar artista/projeto.");
+        }
         const created: Representative = await res.json();
         set((state) => ({
-          representatives: [...state.representatives, created],
+          representatives: [created, ...state.representatives.filter((r) => r.id !== created.id)],
           lastFetchedRepresentatives: Date.now(),
         }));
         return created;
@@ -400,7 +403,10 @@ export const useAppStore = create<AppState>()(
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(repData),
         });
-        if (!res.ok) throw new Error("Falha ao atualizar artista/projeto.");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => null);
+          throw new Error(errData?.message || "Falha ao atualizar artista/projeto.");
+        }
         const updated: Representative = await res.json();
         set((state) => ({
           representatives: state.representatives.map((r) => (r.id === id ? updated : r)),

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Music, Check, UserCheck, Plus, Trash2, KeyRound, FileText, AlertTriangle } from "lucide-react";
+import { X, Music, Check, UserCheck, Plus, Trash2, KeyRound, FileText, AlertTriangle, Sparkles, CheckCircle2 } from "lucide-react";
 import { MasteryRating } from "./MasteryRating";
 import { StickerPillButton } from "./StickerPillButton";
 import { useAppStore, Representative, RepresentativeLink, Song } from "@/lib/store";
@@ -62,6 +62,11 @@ export function SongFormModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
+  // Batch creation tracking
+  const [addedCount, setAddedCount] = useState(0);
+  const [lastAddedTitle, setLastAddedTitle] = useState("");
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
   // Representative links state: Map of repId -> { performanceKey, specificNotes }
   const [repLinksMap, setRepLinksMap] = useState<
     Record<string, { performanceKey: string; specificNotes: string }>
@@ -98,6 +103,8 @@ export function SongFormModal({
   useEffect(() => {
     if (isOpen) {
       fetchRepresentatives();
+      setAddedCount(0);
+      setLastAddedTitle("");
     }
   }, [isOpen, fetchRepresentatives]);
 
@@ -122,7 +129,7 @@ export function SongFormModal({
         });
       }
       setRepLinksMap(initialMap);
-    } else {
+    } else if (isOpen && mode === "create" && addedCount === 0) {
       setTitle("");
       setComposer("");
       setGenre("MPB");
@@ -133,7 +140,7 @@ export function SongFormModal({
       setRepLinksMap({});
     }
     setErrorMsg("");
-  }, [initialData, mode, isOpen]);
+  }, [initialData, mode, isOpen, addedCount]);
 
   const toggleRepresentative = (repId: string) => {
     setRepLinksMap((prev) => {
@@ -170,9 +177,13 @@ export function SongFormModal({
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const saveSongInternal = async (andAddAnother: boolean) => {
+    // If form title is blank and user clicks "Finalizar" after adding previous songs, close cleanly
     if (!title.trim()) {
+      if (!andAddAnother && addedCount > 0) {
+        onClose();
+        return;
+      }
       setErrorMsg("O título da música é obrigatório.");
       return;
     }
@@ -213,12 +224,31 @@ export function SongFormModal({
 
       const selectedIds = Object.keys(repLinksMap);
       await onSave(songPayload, selectedIds);
-      onClose();
+
+      if (andAddAnother) {
+        const savedTitle = title.trim();
+        setAddedCount((c) => c + 1);
+        setLastAddedTitle(savedTitle);
+        setTitle("");
+        setNotes("");
+        setTempoBpm("");
+        setErrorMsg("");
+        setTimeout(() => {
+          titleInputRef.current?.focus();
+        }, 50);
+      } else {
+        onClose();
+      }
     } catch (err: any) {
       setErrorMsg(err?.message || "Erro ao salvar a música. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveSongInternal(false);
   };
 
   if (!isOpen) return null;
@@ -250,9 +280,16 @@ export function SongFormModal({
                 <Music className="w-5 h-5 text-ink" />
               </div>
               <div>
-                <h3 className="text-2xl font-black uppercase tracking-tight text-ink font-[family-name:var(--font-oswald)]">
-                  {mode === "create" ? "Adicionar Nova Música" : "Revisar / Editar Música"}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-2xl font-black uppercase tracking-tight text-ink font-[family-name:var(--font-oswald)]">
+                    {mode === "create" ? "Adicionar Nova Música" : "Revisar / Editar Música"}
+                  </h3>
+                  {addedCount > 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-accent-lime text-ink border border-ink text-[10px] font-black uppercase tracking-wider font-[family-name:var(--font-oswald)] shadow-[1px_1px_0px_#161616]">
+                      +{addedCount} {addedCount === 1 ? "adicionada" : "adicionadas"}
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs font-bold text-dim uppercase tracking-wider font-[family-name:var(--font-dm-sans)]">
                   {mode === "create" ? "Cadastre no acervo central e vincule artistas" : "Atualize tom, domínio e cantores vinculados"}
                 </p>
@@ -271,6 +308,13 @@ export function SongFormModal({
 
           {/* Form Body */}
           <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+            {lastAddedTitle && (
+              <div className="p-3 bg-accent-lime/20 border-2 border-ink rounded-xl text-xs font-bold text-ink flex items-center justify-between font-[family-name:var(--font-dm-sans)] shadow-[2px_2px_0px_#161616] animate-in fade-in duration-200">
+                <span>✅ Música &quot;{lastAddedTitle}&quot; adicionada ao acervo!</span>
+                <span className="text-[11px] text-dim font-normal">Pronta para a próxima</span>
+              </div>
+            )}
+
             {errorMsg && (
               <div className="p-3 bg-accent-cherry/10 border-2 border-accent-cherry text-accent-cherry rounded-xl text-xs font-bold font-[family-name:var(--font-dm-sans)]">
                 {errorMsg}
@@ -284,6 +328,7 @@ export function SongFormModal({
                   Título da Obra <span className="text-accent-cherry">*</span>
                 </label>
                 <input
+                  ref={titleInputRef}
                   type="text"
                   required
                   value={title}
@@ -535,27 +580,42 @@ export function SongFormModal({
             </div>
 
             {/* Footer Buttons */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t-2 border-ink/20">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t-2 border-ink/20">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2.5 rounded-xl border-2 border-ink bg-surface font-bold text-xs uppercase tracking-wider text-ink hover:bg-muted transition-colors shadow-[2px_2px_0px_#161616] font-[family-name:var(--font-dm-sans)]"
+                className="px-4 py-2.5 rounded-xl border-2 border-ink bg-surface font-bold text-xs uppercase tracking-wider text-ink hover:bg-muted transition-colors shadow-[2px_2px_0px_#161616] font-[family-name:var(--font-dm-sans)]"
               >
-                Cancelar
+                {addedCount > 0 ? "Fechar" : "Cancelar"}
               </button>
 
-              <StickerPillButton
-                type="submit"
-                variant="lime"
-                className={isSubmitting ? "opacity-60 pointer-events-none" : ""}
-                icon={<Check className="w-4 h-4 text-surface" />}
-              >
-                {isSubmitting
-                  ? "Salvando..."
-                  : mode === "create"
-                  ? "Cadastrar Música"
-                  : "Salvar Alterações"}
-              </StickerPillButton>
+              <div className="flex items-center gap-2.5">
+                {mode === "create" && (
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => saveSongInternal(true)}
+                    className="px-4 py-2.5 rounded-xl border-2 border-ink bg-accent-lavender text-ink font-bold text-xs uppercase tracking-wider transition-all shadow-[2px_2px_0px_#161616] hover:shadow-none hover:translate-y-0.5 active:translate-y-1 font-[family-name:var(--font-dm-sans)] flex items-center gap-1.5 disabled:opacity-60"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Adicionar outra música
+                  </button>
+                )}
+
+                <StickerPillButton
+                  type="button"
+                  variant="lime"
+                  onClick={() => saveSongInternal(false)}
+                  className={isSubmitting ? "opacity-60 pointer-events-none" : ""}
+                  icon={<Check className="w-4 h-4 text-surface" />}
+                >
+                  {isSubmitting
+                    ? "Salvando..."
+                    : mode === "create"
+                    ? "Finalizar"
+                    : "Salvar Alterações"}
+                </StickerPillButton>
+              </div>
             </div>
           </form>
         </motion.div>

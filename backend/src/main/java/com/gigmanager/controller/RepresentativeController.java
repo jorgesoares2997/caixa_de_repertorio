@@ -61,25 +61,36 @@ public class RepresentativeController {
     }
 
     @PostMapping
-    public Representative createRepresentative(@RequestBody Representative representative) {
+    public ResponseEntity<?> createRepresentative(@RequestBody Representative representative) {
+        if (representative.getName() == null || representative.getName().trim().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "O nome do artista ou projeto é obrigatório."));
+        }
+        representative.setName(representative.getName().trim());
         if (representative.getActive() == null) {
             representative.setActive(true);
         }
         if (representative.getType() == null) {
             representative.setType(RepresentativeType.SINGER);
         }
-        return representativeRepository.save(representative);
+        if (representative.getContactInfo() != null && representative.getContactInfo().trim().isBlank()) {
+            representative.setContactInfo(null);
+        }
+        Representative saved = representativeRepository.save(representative);
+        return ResponseEntity.ok(saved);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Representative> updateRepresentative(@PathVariable UUID id, @RequestBody Representative details) {
+    public ResponseEntity<?> updateRepresentative(@PathVariable UUID id, @RequestBody Representative details) {
+        if (details.getName() == null || details.getName().trim().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "O nome do artista ou projeto é obrigatório."));
+        }
         return representativeRepository.findById(id)
                 .map(rep -> {
-                    rep.setName(details.getName());
+                    rep.setName(details.getName().trim());
                     if (details.getType() != null) {
                         rep.setType(details.getType());
                     }
-                    rep.setContactInfo(details.getContactInfo());
+                    rep.setContactInfo(details.getContactInfo() != null && !details.getContactInfo().trim().isBlank() ? details.getContactInfo().trim() : null);
                     if (details.getActive() != null) {
                         rep.setActive(details.getActive());
                     }
