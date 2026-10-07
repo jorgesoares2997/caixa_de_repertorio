@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Music, Check, UserCheck, Plus, Trash2, KeyRound, FileText } from "lucide-react";
+import { X, Music, Check, UserCheck, Plus, Trash2, KeyRound, FileText, AlertTriangle } from "lucide-react";
 import { MasteryRating } from "./MasteryRating";
 import { StickerPillButton } from "./StickerPillButton";
-import { useAppStore, Representative, RepresentativeLink } from "@/lib/store";
+import { useAppStore, Representative, RepresentativeLink, Song } from "@/lib/store";
 
 export type SongData = {
   id?: string;
@@ -67,9 +67,33 @@ export function SongFormModal({
     Record<string, { performanceKey: string; specificNotes: string }>
   >({});
 
-  // Representatives from Zustand cache
+  // Central catalog and representatives from Zustand
+  const songs = useAppStore((state) => state.songs);
   const representatives = useAppStore((state) => state.representatives);
   const fetchRepresentatives = useAppStore((state) => state.fetchRepresentatives);
+
+  // Check for duplicate song in catalog
+  const duplicateSong = useMemo(() => {
+    if (!title.trim()) return null;
+    const cleanTitle = title.trim().toLowerCase();
+    const cleanComposer = composer.trim().toLowerCase();
+
+    return songs.find((s) => {
+      // Ignore current song when editing
+      if (mode === "edit" && initialData?.id && s.id === initialData.id) {
+        return false;
+      }
+      const sTitle = s.title.trim().toLowerCase();
+      const sComposer = s.composer ? s.composer.trim().toLowerCase() : "";
+
+      if (sTitle === cleanTitle) {
+        if (!cleanComposer || !sComposer || sComposer === cleanComposer) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }, [title, composer, songs, mode, initialData]);
 
   useEffect(() => {
     if (isOpen) {
@@ -150,6 +174,12 @@ export function SongFormModal({
     e.preventDefault();
     if (!title.trim()) {
       setErrorMsg("O título da música é obrigatório.");
+      return;
+    }
+
+    if (duplicateSong) {
+      const compStr = duplicateSong.composer ? ` (${duplicateSong.composer})` : "";
+      setErrorMsg(`A música "${duplicateSong.title}${compStr}" já está cadastrada no acervo!`);
       return;
     }
 
@@ -276,6 +306,21 @@ export function SongFormModal({
                 />
               </div>
             </div>
+
+            {/* Duplicate Song Warning Banner */}
+            {duplicateSong && (
+              <div className="p-3.5 bg-accent-orange/15 border-2 border-ink rounded-2xl shadow-[3px_3px_0px_#161616] flex items-center gap-3 animate-in fade-in duration-200">
+                <AlertTriangle className="w-5 h-5 text-accent-cherry shrink-0" />
+                <div className="flex-1">
+                  <p className="text-xs font-black uppercase text-ink font-[family-name:var(--font-oswald)]">
+                    Música já cadastrada no acervo!
+                  </p>
+                  <p className="text-[11px] font-semibold text-dim mt-0.5 font-[family-name:var(--font-dm-sans)]">
+                    Já existe &quot;{duplicateSong.title}&quot;{duplicateSong.composer ? ` de ${duplicateSong.composer}` : ""} (Tom: {duplicateSong.originalKey || "C"}, Domínio: {duplicateSong.masteryLevel || 0}★). Evite duplicar obras no repertório central.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Row 2: Genre & Quick Selector */}
             <div>

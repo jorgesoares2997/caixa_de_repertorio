@@ -17,6 +17,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -143,11 +144,32 @@ public class SongController {
 
     @Transactional
     @PostMapping
-    public ResponseEntity<SongDTO> createSong(@RequestBody SongDTO songDTO) {
+    public ResponseEntity<?> createSong(@RequestBody SongDTO songDTO) {
+        if (songDTO.getTitle() == null || songDTO.getTitle().trim().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "O título da música é obrigatório."));
+        }
+
+        String cleanTitle = songDTO.getTitle().trim();
+        String cleanComposer = songDTO.getComposer() != null && !songDTO.getComposer().trim().isBlank()
+                ? songDTO.getComposer().trim()
+                : null;
+
+        // Block duplicate songs
+        List<Song> duplicates = songRepository.findDuplicates(cleanTitle, cleanComposer);
+        if (!duplicates.isEmpty()) {
+            Song existing = duplicates.get(0);
+            String composerStr = existing.getComposer() != null ? " (" + existing.getComposer() + ")" : "";
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                    "error", "DUPLICATE_SONG",
+                    "message", "A música \"" + existing.getTitle() + composerStr + "\" já está cadastrada no acervo!",
+                    "existingId", existing.getId()
+            ));
+        }
+
         Song song = Song.builder()
-                .title(songDTO.getTitle())
-                .composer(songDTO.getComposer())
-                .genre(songDTO.getGenre())
+                .title(cleanTitle)
+                .composer(cleanComposer)
+                .genre(songDTO.getGenre() != null && !songDTO.getGenre().trim().isBlank() ? songDTO.getGenre().trim() : null)
                 .originalKey(songDTO.getOriginalKey() != null ? songDTO.getOriginalKey() : "C")
                 .masteryLevel(songDTO.getMasteryLevel() != null ? songDTO.getMasteryLevel() : 3)
                 .tempoBpm(songDTO.getTempoBpm())
@@ -181,12 +203,33 @@ public class SongController {
 
     @Transactional
     @PutMapping("/{id}")
-    public ResponseEntity<SongDTO> updateSong(@PathVariable UUID id, @RequestBody SongDTO songDTO) {
+    public ResponseEntity<?> updateSong(@PathVariable UUID id, @RequestBody SongDTO songDTO) {
+        if (songDTO.getTitle() == null || songDTO.getTitle().trim().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "O título da música é obrigatório."));
+        }
+
+        String cleanTitle = songDTO.getTitle().trim();
+        String cleanComposer = songDTO.getComposer() != null && !songDTO.getComposer().trim().isBlank()
+                ? songDTO.getComposer().trim()
+                : null;
+
+        // Block duplicate songs with other IDs
+        List<Song> duplicates = songRepository.findDuplicatesExcludingId(id, cleanTitle, cleanComposer);
+        if (!duplicates.isEmpty()) {
+            Song existing = duplicates.get(0);
+            String composerStr = existing.getComposer() != null ? " (" + existing.getComposer() + ")" : "";
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                    "error", "DUPLICATE_SONG",
+                    "message", "Já existe outra música cadastrada com o título \"" + existing.getTitle() + composerStr + "\" no acervo!",
+                    "existingId", existing.getId()
+            ));
+        }
+
         return songRepository.findById(id)
                 .map(song -> {
-                    song.setTitle(songDTO.getTitle());
-                    song.setComposer(songDTO.getComposer());
-                    song.setGenre(songDTO.getGenre());
+                    song.setTitle(cleanTitle);
+                    song.setComposer(cleanComposer);
+                    song.setGenre(songDTO.getGenre() != null && !songDTO.getGenre().trim().isBlank() ? songDTO.getGenre().trim() : null);
                     song.setOriginalKey(songDTO.getOriginalKey());
                     song.setMasteryLevel(songDTO.getMasteryLevel() != null ? songDTO.getMasteryLevel() : song.getMasteryLevel());
                     song.setTempoBpm(songDTO.getTempoBpm());

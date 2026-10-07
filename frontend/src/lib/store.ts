@@ -185,7 +185,10 @@ export const useAppStore = create<AppState>()(
           body: JSON.stringify(songData),
         });
 
-        if (!res.ok) throw new Error("Falha ao cadastrar música no servidor.");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => null);
+          throw new Error(errData?.message || "Falha ao cadastrar música no servidor.");
+        }
         const created: Song = await res.json();
 
         // Immediately update LocalStorage cache
@@ -215,7 +218,10 @@ export const useAppStore = create<AppState>()(
           body: JSON.stringify(songData),
         });
 
-        if (!res.ok) throw new Error("Falha ao atualizar música no servidor.");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => null);
+          throw new Error(errData?.message || "Falha ao atualizar música no servidor.");
+        }
         const updated: Song = await res.json();
 
         set((state) => ({
