@@ -101,6 +101,7 @@ interface AppState {
   updateSong: (id: string, songData: Partial<Song>) => Promise<Song>;
   deleteSong: (id: string) => Promise<void>;
   updateMastery: (id: string, level: number) => Promise<void>;
+  updateGenre: (id: string, genre: string) => Promise<void>;
 
   // Actions - Representatives & Exclusive Songs
   fetchRepresentatives: (force?: boolean) => Promise<Representative[]>;
@@ -280,6 +281,38 @@ export const useAppStore = create<AppState>()(
         } catch (err) {
           console.error("[useAppStore] Failed to update mastery level:", err);
           set({ songs: prevSongs });
+        }
+      },
+
+      updateGenre: async (id, genre) => {
+        const prevSongs = get().songs;
+        const cleanGenre = genre ? genre.trim() : "";
+
+        // Optimistic update
+        set((state) => ({
+          songs: state.songs.map((s) =>
+            s.id === id ? { ...s, genre: cleanGenre } : s
+          ),
+          representativeSongsCache: {}, // Invalidate cache so representative lists also update
+        }));
+
+        try {
+          const res = await fetch(`${API_URL}/api/songs/${id}/genre`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ genre: cleanGenre }),
+          });
+          if (!res.ok) {
+            throw new Error("Falha ao atualizar gênero da música.");
+          }
+          const updated: Song = await res.json();
+          set((state) => ({
+            songs: state.songs.map((s) => (s.id === id ? updated : s)),
+          }));
+        } catch (err) {
+          console.error("[useAppStore] Failed to update genre:", err);
+          set({ songs: prevSongs });
+          throw err;
         }
       },
 

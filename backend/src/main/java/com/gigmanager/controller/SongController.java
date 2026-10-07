@@ -235,6 +235,21 @@ public class SongController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PatchMapping("/{id}/genre")
+    public ResponseEntity<SongDTO> updateSongGenre(@PathVariable UUID id, @RequestBody Map<String, String> body) {
+        return songRepository.findById(id)
+                .map(song -> {
+                    if (body.containsKey("genre")) {
+                        String newGenre = body.get("genre");
+                        song.setGenre(newGenre != null && !newGenre.isBlank() ? newGenre.trim() : null);
+                    }
+                    Song saved = songRepository.save(song);
+                    List<RepresentativeSong> repSongs = representativeSongRepository.findBySongIdWithRepresentative(id);
+                    return ResponseEntity.ok(convertToDTO(saved, repSongs));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @Transactional
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteSong(@PathVariable UUID id) {

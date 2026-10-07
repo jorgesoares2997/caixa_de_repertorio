@@ -5,6 +5,7 @@ import { X, Music, UserCheck, Clock, FileText, Edit3, Trash2, Tag, KeyRound, Ext
 import { MasteryRating } from "./MasteryRating";
 import { SongData } from "./SongFormModal";
 import { RepresentativeLink } from "@/lib/store";
+import { GenreBadgePicker } from "./GenreBadgePicker";
 
 interface SongDetailModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface SongDetailModalProps {
   song: (SongData & { lastPracticedAt?: string }) | null;
   onEdit: (song: SongData) => void;
   onDelete: (song: SongData) => void;
+  onUpdateGenre?: (newGenre: string) => Promise<void> | void;
 }
 
 export function SongDetailModal({
@@ -20,6 +22,7 @@ export function SongDetailModal({
   song,
   onEdit,
   onDelete,
+  onUpdateGenre,
 }: SongDetailModalProps) {
   if (!isOpen || !song) return null;
 
@@ -48,9 +51,18 @@ export function SongDetailModal({
           {/* Header */}
           <div className="px-6 py-5 bg-canvas border-b-2 border-ink flex items-start justify-between">
             <div className="flex-1 pr-4">
-              <span className="inline-block px-3 py-1 bg-accent-lavender border-2 border-ink rounded-full text-[10px] font-bold uppercase tracking-wider font-[family-name:var(--font-dm-sans)] mb-2">
-                {song.genre || "Repertório Geral"}
-              </span>
+              <div className="mb-2">
+                {onUpdateGenre ? (
+                  <GenreBadgePicker
+                    genre={song.genre}
+                    onUpdate={onUpdateGenre}
+                  />
+                ) : (
+                  <span className="inline-block px-3 py-1 bg-accent-lavender border-2 border-ink rounded-full text-[10px] font-bold uppercase tracking-wider font-[family-name:var(--font-dm-sans)]">
+                    {song.genre || "Repertório Geral"}
+                  </span>
+                )}
+              </div>
               <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-ink font-[family-name:var(--font-oswald)]">
                 {song.title}
               </h3>

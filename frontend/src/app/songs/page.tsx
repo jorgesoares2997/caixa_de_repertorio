@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { MasteryRating } from "@/components/MasteryRating";
 import { StickerPillButton } from "@/components/StickerPillButton";
+import { GenreBadgePicker } from "@/components/GenreBadgePicker";
 import { SongFormModal, SongData } from "@/components/SongFormModal";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { SongDetailModal } from "@/components/SongDetailModal";
@@ -57,6 +58,7 @@ export default function SongsPage() {
     updateSong,
     deleteSong,
     updateMastery,
+    updateGenre,
   } = useAppStore();
 
   const [sorting, setSorting] = useState<SortingState>([{ id: "title", desc: false }]);
@@ -174,9 +176,10 @@ export default function SongsPage() {
       columnHelper.accessor("genre", {
         header: "Gênero",
         cell: (info) => (
-          <span className="inline-block px-3 py-1 bg-muted border-2 border-ink rounded-full text-[11px] font-bold uppercase tracking-wider font-[family-name:var(--font-dm-sans)] whitespace-nowrap shadow-[1px_1px_0px_#161616]">
-            {info.getValue() || "Geral"}
-          </span>
+          <GenreBadgePicker
+            genre={info.getValue()}
+            onUpdate={(newGenre) => updateGenre(info.row.original.id, newGenre)}
+          />
         ),
       }),
       columnHelper.accessor("originalKey", {
@@ -532,9 +535,11 @@ export default function SongsPage() {
 
                   {/* Badges: Genre & Linked Artists */}
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="px-2.5 py-0.5 bg-muted border border-ink rounded-full text-[10px] font-bold uppercase tracking-wider font-[family-name:var(--font-dm-sans)]">
-                      {song.genre || "Geral"}
-                    </span>
+                    <GenreBadgePicker
+                      genre={song.genre}
+                      size="sm"
+                      onUpdate={(newGenre) => updateGenre(song.id, newGenre)}
+                    />
 
                     {links.map((l, idx) => (
                       <span
@@ -742,6 +747,11 @@ export default function SongsPage() {
         onDelete={(song) => {
           setViewingSong(null);
           setDeletingSong(song as Song);
+        }}
+        onUpdateGenre={async (newGenre) => {
+          if (!viewingSong) return;
+          await updateGenre(viewingSong.id, newGenre);
+          setViewingSong({ ...viewingSong, genre: newGenre });
         }}
       />
 
