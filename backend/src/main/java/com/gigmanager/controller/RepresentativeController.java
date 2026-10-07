@@ -2,10 +2,12 @@ package com.gigmanager.controller;
 
 import com.gigmanager.domain.Representative;
 import com.gigmanager.domain.RepresentativeSong;
+import com.gigmanager.domain.Song;
 import com.gigmanager.domain.enums.RepresentativeType;
 import com.gigmanager.repository.GigRepository;
 import com.gigmanager.repository.RepresentativeRepository;
 import com.gigmanager.repository.RepresentativeSongRepository;
+import com.gigmanager.repository.SongRepository;
 import com.gigmanager.service.PdfService;
 import com.gigmanager.controller.dto.RepresentativeSongResponseDTO;
 import org.springframework.http.HttpHeaders;
@@ -27,17 +29,20 @@ public class RepresentativeController {
 
     private final RepresentativeRepository representativeRepository;
     private final RepresentativeSongRepository representativeSongRepository;
+    private final SongRepository songRepository;
     private final GigRepository gigRepository;
     private final PdfService pdfService;
 
     public RepresentativeController(
             RepresentativeRepository representativeRepository,
             RepresentativeSongRepository representativeSongRepository,
+            SongRepository songRepository,
             GigRepository gigRepository,
             PdfService pdfService
     ) {
         this.representativeRepository = representativeRepository;
         this.representativeSongRepository = representativeSongRepository;
+        this.songRepository = songRepository;
         this.gigRepository = gigRepository;
         this.pdfService = pdfService;
     }
@@ -108,6 +113,7 @@ public class RepresentativeController {
     @GetMapping("/{id}/export-pdf")
     public ResponseEntity<byte[]> exportRepertoire(
             @PathVariable UUID id,
+            @RequestParam(required = false) String genre,
             @RequestParam(required = false, defaultValue = "COMPOSER") String groupBy,
             @RequestParam(required = false, defaultValue = "TITLE") String sortBy) {
 
@@ -116,10 +122,18 @@ public class RepresentativeController {
         
         List<RepresentativeSong> songs = representativeSongRepository.findByRepresentativeIdWithSong(id);
 
+        // Filter by genre if specified
+        if (genre != null && !genre.isBlank() && !genre.equalsIgnoreCase("ALL") && !genre.equalsIgnoreCase("TODOS")) {
+            songs = songs.stream()
+                    .filter(rs -> rs.getSong() != null && rs.getSong().getGenre() != null &&
+                            rs.getSong().getGenre().toLowerCase().contains(genre.toLowerCase().trim()))
+                    .collect(Collectors.toList());
+        }
+
         byte[] pdfBytes = pdfService.generateRepresentativeRepertoirePdf(representative, songs, groupBy, sortBy);
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"repertorio_" + representative.getName().replaceAll("\\s+", "_") + ".pdf\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"repertorio_" + representative.getName().replaceAll("\\s+", "_") + ".pdf\"")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdfBytes);
     }
@@ -152,5 +166,68 @@ public class RepresentativeController {
         }
 
         return ResponseEntity.ok(response);
+    }
+
+    @Transactional
+    @PostMapping("/{representativeId}/songs/{songId}")
+    public ResponseEntity<?> linkSongToRepresentative(
+            @PathVariable UUID representativeId,
+            @PathVariable UUID songId,
+            @RequestParam(required = false) String performanceKey,
+            @RequestParam(required = false) String specificNotes
+    ) {
+        Representative rep = representativeRepository.findById(representativeId).orElse(null);
+        Song song = songRepository.findById(songId).orElse(null);
+
+        if (rep == null || song == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        List<RepresentativeSong> existing = representativeSongRepository.findByRepresentativeIdWithSong(representativeId);
+        RepresentativeSong match = existing.stream()
+                .filter(rs -> rs.getSong() != null && rs.getSong().getId().equals(songId))
+                .findFirst()
+                .orElse(null);
+
+        if (match != null) {
+            if (performanceKey != null && !performanceKey.isBlank()) {
+                match.setPerformanceKey(performanceKey);
+            }
+            if (specificNotes != null) {
+                match.setSpecificNotes(specificNotes);
+            }
+            representativeSongRepository.save(match);
+        } else {
+            RepresentativeSong rs = RepresentativeSong.builder()
+                    .representative(rep)
+                    .song(song)
+                    .performanceKey(performanceKey != null && !performanceKey.isBlank() ? performanceKey : song.getOriginalKey())
+                    .specificNotes(specificNotes)
+                    .build();
+            representativeSongRepository.save(rs);
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Música vinculada com sucesso ao artista " + rep.getName()
+        ));
+    }
+
+    @Transactional
+    @DeleteMapping("/{representativeId}/songs/{songId}")
+    public ResponseEntity<?> unlinkSongFromRepresentative(
+            @PathVariable UUID representativeId,
+            @PathVariable UUID songId
+    ) {
+        List<RepresentativeSong> existing = representativeSongRepository.findByRepresentativeIdWithSong(representativeId);
+        existing.stream()
+                .filter(rs -> rs.getSong() != null && rs.getSong().getId().equals(songId))
+                .findFirst()
+                .ifPresent(representativeSongRepository::delete);
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Música desvinculada com sucesso"
+        ));
     }
 }

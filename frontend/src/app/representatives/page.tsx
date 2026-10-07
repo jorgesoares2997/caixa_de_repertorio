@@ -17,11 +17,16 @@ import {
   Users,
   Mic,
   CheckCircle2,
-  Check
+  Check,
+  Eye,
+  Filter,
+  UserPlus
 } from "lucide-react";
 import { StickerPillButton } from "@/components/StickerPillButton";
 import { MasteryRating } from "@/components/MasteryRating";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
+import { PdfPreviewModal } from "@/components/PdfPreviewModal";
+import { AddIntersectionModal } from "@/components/AddIntersectionModal";
 import { useAppStore, Representative, RepresentativeSong } from "@/lib/store";
 import { getApiBaseUrl } from "@/lib/utils";
 
@@ -50,8 +55,16 @@ export default function RepresentativesPage() {
   const [selectedRep, setSelectedRep] = useState<Representative | null>(null);
   const [songs, setSongs] = useState<RepresentativeSong[]>([]);
   const [songSearch, setSongSearch] = useState("");
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [isLoadingSongs, setIsLoadingSongs] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+
+  // PDF Preview State
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  // Intersection Linking State
+  const [linkingSong, setLinkingSong] = useState<RepresentativeSong | null>(null);
 
   // Modals for CRUD
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -73,6 +86,7 @@ export default function RepresentativesPage() {
   const openModal = async (rep: Representative) => {
     setSelectedRep(rep);
     setSongSearch("");
+    setSelectedGenre(null);
     const cached = representativeSongsCache[rep.id];
     if (cached && cached.length > 0) {
       setSongs(cached);
@@ -91,31 +105,63 @@ export default function RepresentativesPage() {
     }
   };
 
-  const handleExportPdf = async () => {
+  // Reload songs after adding an intersection
+  const reloadRepresentativeSongs = async () => {
     if (!selectedRep) return;
-    setIsExporting(true);
+    try {
+      const data = await fetchRepresentativeSongs(selectedRep.id, true);
+      setSongs(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Open PDF Preview with genre filter
+  const handleOpenPdfPreview = async () => {
+    if (!selectedRep) return;
+    setIsGeneratingPdf(true);
+    setIsPreviewOpen(true);
+    if (previewPdfUrl) {
+      window.URL.revokeObjectURL(previewPdfUrl);
+      setPreviewPdfUrl(null);
+    }
+
     try {
       const API_URL = getApiBaseUrl();
+      const params = new URLSearchParams({
+        groupBy: "COMPOSER",
+        sortBy: "TITLE",
+      });
+      if (selectedGenre && selectedGenre !== "ALL") {
+        params.append("genre", selectedGenre);
+      }
+
       const response = await fetch(
-        `${API_URL}/api/representatives/${selectedRep.id}/export-pdf?groupBy=COMPOSER&sortBy=TITLE`
+        `${API_URL}/api/representatives/${selectedRep.id}/export-pdf?${params.toString()}`
       );
-      if (!response.ok) throw new Error("Falha ao exportar PDF");
+      if (!response.ok) throw new Error("Falha ao gerar pré-visualização do PDF");
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `repertorio_${selectedRep.name.replace(/\s+/g, "_")}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      setPreviewPdfUrl(url);
     } catch (error) {
       console.error(error);
-      alert("Erro ao exportar PDF");
+      alert("Erro ao gerar pré-visualização do PDF");
+      setIsPreviewOpen(false);
     } finally {
-      setIsExporting(false);
+      setIsGeneratingPdf(false);
     }
+  };
+
+  const handleDownloadPdf = () => {
+    if (!selectedRep || !previewPdfUrl) return;
+    const a = document.createElement("a");
+    a.href = previewPdfUrl;
+    const genreSuffix = selectedGenre ? `_${selectedGenre.replace(/\s+/g, "_")}` : "";
+    a.download = `repertorio_${selectedRep.name.replace(/\s+/g, "_")}${genreSuffix}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const handleSaveRepresentative = async (e: React.FormEvent) => {
@@ -161,24 +207,43 @@ export default function RepresentativesPage() {
 
   const filteredRepresentatives = useMemo(() => {
     return representatives.filter((rep) => {
-      const matchName = rep.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      const matchName =
+        rep.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         rep.contactInfo?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchType = !typeFilter || rep.type === typeFilter;
       return matchName && matchType;
     });
   }, [representatives, searchQuery, typeFilter]);
 
+  // Extract unique genres for the selected representative
+  const availableGenres = useMemo(() => {
+    const set = new Set<string>();
+    songs.forEach((s) => {
+      if (s.genre && s.genre.trim()) {
+        set.add(s.genre.trim());
+      }
+    });
+    return Array.from(set).sort();
+  }, [songs]);
+
   const filteredSongs = useMemo(() => {
-    if (!songSearch) return songs;
-    const q = songSearch.toLowerCase();
-    return songs.filter(
-      (s) =>
+    return songs.filter((s) => {
+      const q = songSearch.toLowerCase();
+      const matchSearch =
+        !songSearch ||
         s.title.toLowerCase().includes(q) ||
         s.composer?.toLowerCase().includes(q) ||
         s.genre?.toLowerCase().includes(q) ||
-        s.performanceKey?.toLowerCase().includes(q)
-    );
-  }, [songs, songSearch]);
+        s.performanceKey?.toLowerCase().includes(q);
+
+      const matchGenre =
+        !selectedGenre ||
+        selectedGenre === "ALL" ||
+        s.genre?.toLowerCase().includes(selectedGenre.toLowerCase());
+
+      return matchSearch && matchGenre;
+    });
+  }, [songs, songSearch, selectedGenre]);
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700 mt-4 pb-20">
@@ -339,12 +404,12 @@ export default function RepresentativesPage() {
 
       {/* Modal: View Representative Repertory */}
       {selectedRep && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6">
           <div
-            className="absolute inset-0 bg-ink/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-ink/60 backdrop-blur-sm"
             onClick={() => setSelectedRep(null)}
           />
-          <div className="relative bg-surface w-full max-w-5xl h-[88vh] flex flex-col rounded-3xl border-2 border-ink shadow-[8px_8px_0px_#161616] overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="relative bg-surface w-full max-w-5xl h-[90vh] flex flex-col rounded-3xl border-2 border-ink shadow-[8px_8px_0px_#161616] overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="px-6 md:px-8 py-5 border-b-2 border-ink flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-canvas">
               <div>
@@ -362,14 +427,15 @@ export default function RepresentativesPage() {
                 </p>
               </div>
 
+              {/* PDF Preview Trigger & Close */}
               <div className="flex items-center gap-3 w-full md:w-auto">
                 <StickerPillButton
                   variant="lavender"
-                  onClick={handleExportPdf}
+                  onClick={handleOpenPdfPreview}
                   className="flex-1 md:flex-none justify-center"
-                  icon={<FileDown className="w-4 h-4 text-surface" />}
+                  icon={<Eye className="w-4 h-4 text-surface" />}
                 >
-                  {isExporting ? "Gerando..." : "Exportar PDF"}
+                  Visualizar & Exportar PDF
                 </StickerPillButton>
 
                 <button
@@ -381,99 +447,248 @@ export default function RepresentativesPage() {
               </div>
             </div>
 
-            {/* Modal Sub-bar: Search within rep */}
-            <div className="px-6 md:px-8 py-3 bg-muted/40 border-b-2 border-ink flex items-center gap-4">
-              <div className="relative flex-1">
+            {/* Modal Controls: Search & Genre Selector */}
+            <div className="px-6 md:px-8 py-3 bg-muted/40 border-b-2 border-ink flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+              {/* Search input */}
+              <div className="relative flex-1 w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dim" />
                 <input
                   value={songSearch}
                   onChange={(e) => setSongSearch(e.target.value)}
-                  placeholder="Filtrar músicas deste artista por título, tom ou compositor..."
+                  placeholder="Filtrar músicas por título, tom ou compositor..."
                   className="w-full bg-surface border-2 border-ink rounded-xl py-1.5 pl-9 pr-3 text-xs font-semibold text-ink shadow-[2px_2px_0px_#161616] focus:outline-none"
                 />
               </div>
-              <span className="text-xs font-bold text-dim uppercase tracking-wider font-[family-name:var(--font-dm-sans)] whitespace-nowrap">
-                {filteredSongs.length} faixas
-              </span>
+
+              {/* Genre Filter Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto no-scrollbar py-1">
+                <span className="text-[11px] font-bold text-dim uppercase tracking-wider font-[family-name:var(--font-dm-sans)] shrink-0 mr-1">
+                  Filtrar Gênero:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedGenre(null)}
+                  className={`px-2.5 py-1 rounded-lg border border-ink text-[11px] font-bold uppercase transition-all whitespace-nowrap ${
+                    !selectedGenre
+                      ? "bg-ink text-surface shadow-[1px_1px_0px_#161616]"
+                      : "bg-surface text-ink hover:bg-muted"
+                  }`}
+                >
+                  Todos ({songs.length})
+                </button>
+                {availableGenres.map((g) => {
+                  const count = songs.filter((s) => s.genre?.toLowerCase() === g.toLowerCase()).length;
+                  return (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setSelectedGenre(selectedGenre === g ? null : g)}
+                      className={`px-2.5 py-1 rounded-lg border border-ink text-[11px] font-bold uppercase transition-all whitespace-nowrap ${
+                        selectedGenre === g
+                          ? "bg-accent-lime text-ink shadow-[1px_1px_0px_#161616]"
+                          : "bg-surface text-ink hover:bg-muted"
+                      }`}
+                    >
+                      {g} ({count})
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-surface">
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 bg-surface">
               {isLoadingSongs ? (
-                <div className="flex h-full items-center justify-center font-bold uppercase tracking-widest text-dim animate-pulse">
+                <div className="flex h-full items-center justify-center font-bold uppercase tracking-widest text-dim animate-pulse py-16">
                   Carregando faixas do artista...
                 </div>
               ) : filteredSongs.length === 0 ? (
                 <div className="py-16 text-center text-dim font-bold uppercase text-sm">
-                  Nenhuma música encontrada no repertório deste artista.
+                  Nenhuma música encontrada com os filtros selecionados.
                 </div>
               ) : (
-                <table className="w-full text-left border-collapse">
-                  <thead className="bg-muted border-b-2 border-ink">
-                    <tr>
-                      <th className="py-3.5 px-4 font-black uppercase tracking-wider text-xs font-[family-name:var(--font-dm-sans)]">
-                        Tom de Execução
-                      </th>
-                      <th className="py-3.5 px-4 font-black uppercase tracking-wider text-xs font-[family-name:var(--font-dm-sans)]">
-                        Música & Compositor
-                      </th>
-                      <th className="py-3.5 px-4 font-black uppercase tracking-wider text-xs font-[family-name:var(--font-dm-sans)]">
-                        Domínio
-                      </th>
-                      <th className="py-3.5 px-4 font-black uppercase tracking-wider text-xs font-[family-name:var(--font-dm-sans)]">
-                        Intersecções com outros Projetos
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y-2 divide-muted">
+                <>
+                  {/* DESKTOP VIEW: TABLE */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="bg-muted border-b-2 border-ink">
+                        <tr>
+                          <th className="py-3.5 px-4 font-black uppercase tracking-wider text-xs font-[family-name:var(--font-dm-sans)]">
+                            Tom de Execução
+                          </th>
+                          <th className="py-3.5 px-4 font-black uppercase tracking-wider text-xs font-[family-name:var(--font-dm-sans)]">
+                            Música & Compositor
+                          </th>
+                          <th className="py-3.5 px-4 font-black uppercase tracking-wider text-xs font-[family-name:var(--font-dm-sans)]">
+                            Domínio
+                          </th>
+                          <th className="py-3.5 px-4 font-black uppercase tracking-wider text-xs font-[family-name:var(--font-dm-sans)]">
+                            Intersecções & Outros Artistas
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y-2 divide-muted">
+                        {filteredSongs.map((song, i) => (
+                          <tr
+                            key={song.songId || i}
+                            className={`hover:bg-accent-lime/15 transition-colors ${
+                              i % 2 === 0 ? "bg-surface" : "bg-canvas/50"
+                            }`}
+                          >
+                            <td className="py-3 px-4">
+                              <span className="inline-block px-3 py-1 bg-accent-lavender border-2 border-ink rounded-lg text-sm font-black font-[family-name:var(--font-oswald)] text-ink shadow-[1px_1px_0px_#161616]">
+                                {song.performanceKey}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="font-black text-base uppercase text-ink font-[family-name:var(--font-oswald)] block">
+                                {song.title}
+                              </span>
+                              <span className="text-xs text-dim font-semibold">
+                                {song.composer || "—"} {song.genre ? `• ${song.genre}` : ""}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <MasteryRating level={song.masteryLevel} size="sm" readOnly />
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {song.intersections && song.intersections.length > 0 ? (
+                                  song.intersections.map((inter, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-ink text-[10px] font-bold uppercase bg-canvas font-[family-name:var(--font-dm-sans)] shadow-[1px_1px_0px_#161616]"
+                                    >
+                                      <span>{inter.representativeName}</span>
+                                      <span className="font-black text-accent-cherry">({inter.performanceKey})</span>
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="text-[11px] text-dim/60 font-medium italic mr-1">
+                                    Exclusiva deste projeto
+                                  </span>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => setLinkingSong(song)}
+                                  title="Adicionar outro artista a esta música"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-dashed border-ink bg-surface hover:bg-accent-lime text-[10px] font-black uppercase tracking-wider font-[family-name:var(--font-dm-sans)] transition-colors text-ink shadow-sm"
+                                >
+                                  <UserPlus className="w-3 h-3 text-ink" />
+                                  <span>+ Vincular</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* MOBILE VIEW: RESPONSIVE CARDS (No horizontal scroll!) */}
+                  <div className="md:hidden space-y-3">
                     {filteredSongs.map((song, i) => (
-                      <tr
+                      <div
                         key={song.songId || i}
-                        className={`hover:bg-accent-lime/15 transition-colors ${
-                          i % 2 === 0 ? "bg-surface" : "bg-canvas/50"
-                        }`}
+                        className="bg-canvas border-2 border-ink rounded-2xl p-3.5 shadow-[3px_3px_0px_#161616] flex flex-col gap-2.5"
                       >
-                        <td className="py-3 px-4">
-                          <span className="inline-block px-3 py-1 bg-accent-lavender border-2 border-ink rounded-lg text-sm font-black font-[family-name:var(--font-oswald)] text-ink shadow-[1px_1px_0px_#161616]">
-                            {song.performanceKey}
+                        {/* Header: Title & Key */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <h4 className="font-black text-base uppercase text-ink font-[family-name:var(--font-oswald)] leading-tight">
+                              {song.title}
+                            </h4>
+                            <p className="text-xs text-dim font-semibold mt-0.5">
+                              {song.composer || "Autor desconhecido"} {song.genre ? `• ${song.genre}` : ""}
+                            </p>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <span className="inline-block px-2.5 py-0.5 bg-accent-lavender border-2 border-ink rounded-lg text-xs font-black font-[family-name:var(--font-oswald)] text-ink shadow-[1px_1px_0px_#161616]">
+                              {song.performanceKey}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Middle: Mastery Stars */}
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-dim font-[family-name:var(--font-dm-sans)]">
+                            Domínio:
                           </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="font-black text-base uppercase text-ink font-[family-name:var(--font-oswald)] block">
-                            {song.title}
-                          </span>
-                          <span className="text-xs text-dim font-semibold">
-                            {song.composer || "—"} {song.genre ? `• ${song.genre}` : ""}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
                           <MasteryRating level={song.masteryLevel} size="sm" readOnly />
-                        </td>
-                        <td className="py-3 px-4">
-                          {song.intersections && song.intersections.length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5">
-                              {song.intersections.map((inter, idx) => (
+                        </div>
+
+                        {/* Bottom: Intersections & Link Button */}
+                        <div className="pt-2 border-t border-ink/15 flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5 flex-1">
+                            {song.intersections && song.intersections.length > 0 ? (
+                              song.intersections.map((inter, idx) => (
                                 <span
                                   key={idx}
-                                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-ink text-[10px] font-bold uppercase bg-canvas font-[family-name:var(--font-dm-sans)] shadow-[1px_1px_0px_#161616]"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-ink text-[10px] font-bold uppercase bg-surface font-[family-name:var(--font-dm-sans)] shadow-sm"
                                 >
                                   <span>{inter.representativeName}</span>
                                   <span className="font-black text-accent-cherry">({inter.performanceKey})</span>
                                 </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-[11px] text-dim/60 font-medium italic">Exclusiva deste projeto</span>
-                          )}
-                        </td>
-                      </tr>
+                              ))
+                            ) : (
+                              <span className="text-[10px] text-dim/70 italic">
+                                Exclusiva deste projeto
+                              </span>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setLinkingSong(song)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-dashed border-ink bg-surface hover:bg-accent-lime text-[10px] font-black uppercase font-[family-name:var(--font-dm-sans)] text-ink shrink-0"
+                          >
+                            <UserPlus className="w-3 h-3 text-ink" />
+                            <span>+ Vincular</span>
+                          </button>
+                        </div>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                </>
               )}
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal: PDF In-Browser Previewer */}
+      {selectedRep && (
+        <PdfPreviewModal
+          isOpen={isPreviewOpen}
+          onClose={() => setIsPreviewOpen(false)}
+          title={`Repertório • ${selectedRep.name}`}
+          subtitle={
+            selectedGenre
+              ? `Filtro de Gênero: ${selectedGenre} · ${filteredSongs.length} músicas`
+              : `Repertório Completo · ${songs.length} músicas`
+          }
+          pdfBlobUrl={previewPdfUrl}
+          isLoading={isGeneratingPdf}
+          onDownload={handleDownloadPdf}
+          fileName={`repertorio_${selectedRep.name.replace(/\s+/g, "_")}${
+            selectedGenre ? `_${selectedGenre.replace(/\s+/g, "_")}` : ""
+          }.pdf`}
+        />
+      )}
+
+      {/* Modal: Add Artist Intersection */}
+      {selectedRep && (
+        <AddIntersectionModal
+          isOpen={!!linkingSong}
+          onClose={() => setLinkingSong(null)}
+          song={linkingSong}
+          currentRepresentativeId={selectedRep.id}
+          allRepresentatives={representatives}
+          onSuccess={reloadRepresentativeSongs}
+        />
       )}
 
       {/* Modal: Create or Edit Representative */}
