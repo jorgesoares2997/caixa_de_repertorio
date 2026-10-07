@@ -55,7 +55,7 @@ export default function RepresentativesPage() {
   const [selectedRep, setSelectedRep] = useState<Representative | null>(null);
   const [songs, setSongs] = useState<RepresentativeSong[]>([]);
   const [songSearch, setSongSearch] = useState("");
-  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [isLoadingSongs, setIsLoadingSongs] = useState(false);
 
   // PDF Preview State
@@ -86,7 +86,7 @@ export default function RepresentativesPage() {
   const openModal = async (rep: Representative) => {
     setSelectedRep(rep);
     setSongSearch("");
-    setSelectedGenre(null);
+    setSelectedGenres([]);
     const cached = representativeSongsCache[rep.id];
     if (cached && cached.length > 0) {
       setSongs(cached);
@@ -105,6 +105,14 @@ export default function RepresentativesPage() {
     }
   };
 
+  const toggleGenre = (genre: string) => {
+    setSelectedGenres((prev) =>
+      prev.includes(genre)
+        ? prev.filter((g) => g !== genre)
+        : [...prev, genre]
+    );
+  };
+
   // Reload songs after adding an intersection
   const reloadRepresentativeSongs = async () => {
     if (!selectedRep) return;
@@ -116,7 +124,7 @@ export default function RepresentativesPage() {
     }
   };
 
-  // Open PDF Preview with genre filter
+  // Open PDF Preview with multiple genre filters
   const handleOpenPdfPreview = async () => {
     if (!selectedRep) return;
     setIsGeneratingPdf(true);
@@ -132,8 +140,8 @@ export default function RepresentativesPage() {
         groupBy: "COMPOSER",
         sortBy: "TITLE",
       });
-      if (selectedGenre && selectedGenre !== "ALL") {
-        params.append("genre", selectedGenre);
+      if (selectedGenres.length > 0) {
+        params.append("genres", selectedGenres.join(","));
       }
 
       const response = await fetch(
@@ -157,7 +165,10 @@ export default function RepresentativesPage() {
     if (!selectedRep || !previewPdfUrl) return;
     const a = document.createElement("a");
     a.href = previewPdfUrl;
-    const genreSuffix = selectedGenre ? `_${selectedGenre.replace(/\s+/g, "_")}` : "";
+    const genreSuffix =
+      selectedGenres.length > 0
+        ? `_${selectedGenres.map((g) => g.replace(/\s+/g, "_")).join("-")}`
+        : "";
     a.download = `repertorio_${selectedRep.name.replace(/\s+/g, "_")}${genreSuffix}.pdf`;
     document.body.appendChild(a);
     a.click();
@@ -237,13 +248,12 @@ export default function RepresentativesPage() {
         s.performanceKey?.toLowerCase().includes(q);
 
       const matchGenre =
-        !selectedGenre ||
-        selectedGenre === "ALL" ||
-        s.genre?.toLowerCase().includes(selectedGenre.toLowerCase());
+        selectedGenres.length === 0 ||
+        selectedGenres.some((g) => s.genre?.toLowerCase().includes(g.toLowerCase()));
 
       return matchSearch && matchGenre;
     });
-  }, [songs, songSearch, selectedGenre]);
+  }, [songs, songSearch, selectedGenres]);
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700 mt-4 pb-20">
@@ -460,36 +470,39 @@ export default function RepresentativesPage() {
                 />
               </div>
 
-              {/* Genre Filter Pills */}
+              {/* Genre Filter Pills (Multi-Select) */}
               <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto no-scrollbar py-1">
                 <span className="text-[11px] font-bold text-dim uppercase tracking-wider font-[family-name:var(--font-dm-sans)] shrink-0 mr-1">
-                  Filtrar Gênero:
+                  Filtrar Gêneros:
                 </span>
                 <button
                   type="button"
-                  onClick={() => setSelectedGenre(null)}
-                  className={`px-2.5 py-1 rounded-lg border border-ink text-[11px] font-bold uppercase transition-all whitespace-nowrap ${
-                    !selectedGenre
-                      ? "bg-ink text-surface shadow-[1px_1px_0px_#161616]"
+                  onClick={() => setSelectedGenres([])}
+                  className={`px-2.5 py-1 rounded-lg border-2 border-ink text-[11px] font-bold uppercase transition-all whitespace-nowrap ${
+                    selectedGenres.length === 0
+                      ? "bg-ink text-surface shadow-[2px_2px_0px_#161616]"
                       : "bg-surface text-ink hover:bg-muted"
                   }`}
                 >
                   Todos ({songs.length})
                 </button>
                 {availableGenres.map((g) => {
+                  const isSelected = selectedGenres.includes(g);
                   const count = songs.filter((s) => s.genre?.toLowerCase() === g.toLowerCase()).length;
                   return (
                     <button
                       key={g}
                       type="button"
-                      onClick={() => setSelectedGenre(selectedGenre === g ? null : g)}
-                      className={`px-2.5 py-1 rounded-lg border border-ink text-[11px] font-bold uppercase transition-all whitespace-nowrap ${
-                        selectedGenre === g
-                          ? "bg-accent-lime text-ink shadow-[1px_1px_0px_#161616]"
-                          : "bg-surface text-ink hover:bg-muted"
+                      onClick={() => toggleGenre(g)}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border-2 border-ink text-[11px] font-bold uppercase transition-all whitespace-nowrap ${
+                        isSelected
+                          ? "bg-accent-lime text-ink shadow-[2px_2px_0px_#161616]"
+                          : "bg-surface text-ink hover:bg-muted opacity-80 hover:opacity-100"
                       }`}
                     >
-                      {g} ({count})
+                      {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                      <span>{g}</span>
+                      <span className="text-[10px] opacity-75">({count})</span>
                     </button>
                   );
                 })}
@@ -666,15 +679,17 @@ export default function RepresentativesPage() {
           onClose={() => setIsPreviewOpen(false)}
           title={`Repertório • ${selectedRep.name}`}
           subtitle={
-            selectedGenre
-              ? `Filtro de Gênero: ${selectedGenre} · ${filteredSongs.length} músicas`
+            selectedGenres.length > 0
+              ? `Filtro de Gêneros: ${selectedGenres.join(", ")} · ${filteredSongs.length} músicas`
               : `Repertório Completo · ${songs.length} músicas`
           }
           pdfBlobUrl={previewPdfUrl}
           isLoading={isGeneratingPdf}
           onDownload={handleDownloadPdf}
           fileName={`repertorio_${selectedRep.name.replace(/\s+/g, "_")}${
-            selectedGenre ? `_${selectedGenre.replace(/\s+/g, "_")}` : ""
+            selectedGenres.length > 0
+              ? `_${selectedGenres.map((g) => g.replace(/\s+/g, "_")).join("-")}`
+              : ""
           }.pdf`}
         />
       )}

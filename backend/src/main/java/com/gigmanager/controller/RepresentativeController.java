@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -113,6 +114,7 @@ public class RepresentativeController {
     @GetMapping("/{id}/export-pdf")
     public ResponseEntity<byte[]> exportRepertoire(
             @PathVariable UUID id,
+            @RequestParam(required = false) List<String> genres,
             @RequestParam(required = false) String genre,
             @RequestParam(required = false, defaultValue = "COMPOSER") String groupBy,
             @RequestParam(required = false, defaultValue = "TITLE") String sortBy) {
@@ -122,11 +124,34 @@ public class RepresentativeController {
         
         List<RepresentativeSong> songs = representativeSongRepository.findByRepresentativeIdWithSong(id);
 
-        // Filter by genre if specified
-        if (genre != null && !genre.isBlank() && !genre.equalsIgnoreCase("ALL") && !genre.equalsIgnoreCase("TODOS")) {
+        // Collect all target genres
+        List<String> targetGenres = new ArrayList<>();
+        if (genres != null && !genres.isEmpty()) {
+            for (String g : genres) {
+                if (g != null && !g.isBlank()) {
+                    for (String part : g.split(",")) {
+                        String clean = part.trim().toLowerCase();
+                        if (!clean.isBlank() && !clean.equalsIgnoreCase("all") && !clean.equalsIgnoreCase("todos")) {
+                            targetGenres.add(clean);
+                        }
+                    }
+                }
+            }
+        }
+        if (genre != null && !genre.isBlank()) {
+            for (String part : genre.split(",")) {
+                String clean = part.trim().toLowerCase();
+                if (!clean.isBlank() && !clean.equalsIgnoreCase("all") && !clean.equalsIgnoreCase("todos") && !targetGenres.contains(clean)) {
+                    targetGenres.add(clean);
+                }
+            }
+        }
+
+        // Filter by multiple genres if specified
+        if (!targetGenres.isEmpty()) {
             songs = songs.stream()
                     .filter(rs -> rs.getSong() != null && rs.getSong().getGenre() != null &&
-                            rs.getSong().getGenre().toLowerCase().contains(genre.toLowerCase().trim()))
+                            targetGenres.stream().anyMatch(tg -> rs.getSong().getGenre().toLowerCase().contains(tg)))
                     .collect(Collectors.toList());
         }
 
