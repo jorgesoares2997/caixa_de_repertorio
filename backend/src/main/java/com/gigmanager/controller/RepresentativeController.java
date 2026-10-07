@@ -116,6 +116,7 @@ public class RepresentativeController {
             @PathVariable UUID id,
             @RequestParam(required = false) List<String> genres,
             @RequestParam(required = false) String genre,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = "COMPOSER") String groupBy,
             @RequestParam(required = false, defaultValue = "TITLE") String sortBy) {
 
@@ -123,6 +124,20 @@ public class RepresentativeController {
                 .orElseThrow(() -> new RuntimeException("Representative not found"));
         
         List<RepresentativeSong> songs = representativeSongRepository.findByRepresentativeIdWithSong(id);
+
+        // Filter by search query if specified
+        if (search != null && !search.isBlank()) {
+            String q = search.trim().toLowerCase();
+            songs = songs.stream()
+                    .filter(rs -> rs.getSong() != null && (
+                            (rs.getSong().getTitle() != null && rs.getSong().getTitle().toLowerCase().contains(q)) ||
+                            (rs.getSong().getComposer() != null && rs.getSong().getComposer().toLowerCase().contains(q)) ||
+                            (rs.getSong().getGenre() != null && rs.getSong().getGenre().toLowerCase().contains(q)) ||
+                            (rs.getPerformanceKey() != null && rs.getPerformanceKey().toLowerCase().contains(q)) ||
+                            (rs.getSong().getOriginalKey() != null && rs.getSong().getOriginalKey().toLowerCase().contains(q))
+                    ))
+                    .collect(Collectors.toList());
+        }
 
         // Collect all target genres
         List<String> targetGenres = new ArrayList<>();
@@ -150,8 +165,13 @@ public class RepresentativeController {
         // Filter by multiple genres if specified
         if (!targetGenres.isEmpty()) {
             songs = songs.stream()
-                    .filter(rs -> rs.getSong() != null && rs.getSong().getGenre() != null &&
-                            targetGenres.stream().anyMatch(tg -> rs.getSong().getGenre().toLowerCase().contains(tg)))
+                    .filter(rs -> {
+                        if (rs.getSong() == null || rs.getSong().getGenre() == null) return false;
+                        String songGenre = rs.getSong().getGenre().trim().toLowerCase();
+                        return targetGenres.stream().anyMatch(tg ->
+                                songGenre.contains(tg) || tg.contains(songGenre)
+                        );
+                    })
                     .collect(Collectors.toList());
         }
 

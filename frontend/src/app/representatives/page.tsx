@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import {
   X,
   User,
@@ -20,7 +20,8 @@ import {
   Check,
   Eye,
   Filter,
-  UserPlus
+  UserPlus,
+  ChevronDown,
 } from "lucide-react";
 import { StickerPillButton } from "@/components/StickerPillButton";
 import { MasteryRating } from "@/components/MasteryRating";
@@ -56,6 +57,8 @@ export default function RepresentativesPage() {
   const [songs, setSongs] = useState<RepresentativeSong[]>([]);
   const [songSearch, setSongSearch] = useState("");
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [isGenreDropdownOpen, setIsGenreDropdownOpen] = useState(false);
+  const genreDropdownRef = useRef<HTMLDivElement>(null);
   const [isLoadingSongs, setIsLoadingSongs] = useState(false);
 
   // PDF Preview State
@@ -83,10 +86,26 @@ export default function RepresentativesPage() {
     fetchRepresentatives();
   }, [fetchRepresentatives]);
 
+  // Click outside listener for genre select dropdown
+  useEffect(() => {
+    if (!isGenreDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        genreDropdownRef.current &&
+        !genreDropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsGenreDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isGenreDropdownOpen]);
+
   const openModal = async (rep: Representative) => {
     setSelectedRep(rep);
     setSongSearch("");
     setSelectedGenres([]);
+    setIsGenreDropdownOpen(false);
     const cached = representativeSongsCache[rep.id];
     if (cached && cached.length > 0) {
       setSongs(cached);
@@ -142,6 +161,9 @@ export default function RepresentativesPage() {
       });
       if (selectedGenres.length > 0) {
         params.append("genres", selectedGenres.join(","));
+      }
+      if (songSearch.trim()) {
+        params.append("search", songSearch.trim());
       }
 
       const response = await fetch(
@@ -457,56 +479,156 @@ export default function RepresentativesPage() {
               </div>
             </div>
 
-            {/* Modal Controls: Search & Genre Selector */}
-            <div className="px-6 md:px-8 py-3 bg-muted/40 border-b-2 border-ink flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-              {/* Search input */}
-              <div className="relative flex-1 w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dim" />
-                <input
-                  value={songSearch}
-                  onChange={(e) => setSongSearch(e.target.value)}
-                  placeholder="Filtrar músicas por título, tom ou compositor..."
-                  className="w-full bg-surface border-2 border-ink rounded-xl py-1.5 pl-9 pr-3 text-xs font-semibold text-ink shadow-[2px_2px_0px_#161616] focus:outline-none"
-                />
+            {/* Modal Controls: Search & Genre Select Dropdown */}
+            <div className="px-6 md:px-8 py-3 bg-muted/40 border-b-2 border-ink space-y-2.5">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                {/* Search input */}
+                <div className="relative flex-1">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-dim" />
+                  <input
+                    value={songSearch}
+                    onChange={(e) => setSongSearch(e.target.value)}
+                    placeholder="Filtrar músicas por título, tom ou compositor..."
+                    className="w-full bg-surface border-2 border-ink rounded-xl py-2 pl-9 pr-3 text-xs font-semibold text-ink shadow-[2px_2px_0px_#161616] focus:outline-none"
+                  />
+                </div>
+
+                {/* Genre Select Dropdown */}
+                <div className="relative shrink-0" ref={genreDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsGenreDropdownOpen(!isGenreDropdownOpen)}
+                    className={`w-full sm:w-auto inline-flex items-center justify-between gap-2.5 px-3.5 py-2 border-2 border-ink rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-[2px_2px_0px_#161616] font-[family-name:var(--font-dm-sans)] ${
+                      selectedGenres.length > 0
+                        ? "bg-accent-lime text-ink"
+                        : "bg-surface text-ink hover:bg-muted"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Filter className="w-3.5 h-3.5 shrink-0 text-ink" />
+                      <span>
+                        {selectedGenres.length === 0
+                          ? `Gênero: Todos (${songs.length})`
+                          : selectedGenres.length === 1
+                          ? `Gênero: ${selectedGenres[0]}`
+                          : `Gêneros (${selectedGenres.length} selecionados)`}
+                      </span>
+                    </div>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 shrink-0 transition-transform ${
+                        isGenreDropdownOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {isGenreDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-2 z-50 w-64 sm:w-72 bg-surface border-2 border-ink rounded-2xl shadow-[6px_6px_0px_#161616] p-2.5 space-y-1.5 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="flex items-center justify-between px-2 py-1 border-b-2 border-ink/10">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-dim font-[family-name:var(--font-dm-sans)]">
+                          Selecionar Gêneros
+                        </span>
+                        {selectedGenres.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedGenres([])}
+                            className="text-[10px] font-bold uppercase text-accent-cherry hover:underline font-[family-name:var(--font-dm-sans)]"
+                          >
+                            Limpar
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Option: Todos */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedGenres([])}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase transition-all ${
+                          selectedGenres.length === 0
+                            ? "bg-ink text-surface shadow-[1px_1px_0px_#161616]"
+                            : "hover:bg-muted text-ink"
+                        }`}
+                      >
+                        <span>Todos os Gêneros</span>
+                        <span className="text-[10px] opacity-70">({songs.length})</span>
+                      </button>
+
+                      {/* Options: Available Genres */}
+                      <div className="max-h-56 overflow-y-auto space-y-0.5 pr-1">
+                        {availableGenres.length === 0 ? (
+                          <p className="text-[11px] text-dim italic p-2">Nenhum gênero cadastrado</p>
+                        ) : (
+                          availableGenres.map((g) => {
+                            const isSelected = selectedGenres.includes(g);
+                            const count = songs.filter(
+                              (s) => s.genre?.toLowerCase() === g.toLowerCase()
+                            ).length;
+
+                            return (
+                              <button
+                                key={g}
+                                type="button"
+                                onClick={() => toggleGenre(g)}
+                                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase transition-all ${
+                                  isSelected
+                                    ? "bg-accent-lime text-ink font-black border border-ink shadow-[1px_1px_0px_#161616]"
+                                    : "hover:bg-muted text-ink"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className={`w-3.5 h-3.5 rounded border border-ink flex items-center justify-center ${
+                                      isSelected ? "bg-ink text-surface" : "bg-surface"
+                                    }`}
+                                  >
+                                    {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                                  </div>
+                                  <span className="truncate max-w-[150px]">{g}</span>
+                                </div>
+                                <span className="text-[10px] opacity-70 font-semibold">
+                                  ({count})
+                                </span>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Genre Filter Pills (Multi-Select) */}
-              <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto no-scrollbar py-1">
-                <span className="text-[11px] font-bold text-dim uppercase tracking-wider font-[family-name:var(--font-dm-sans)] shrink-0 mr-1">
-                  Filtrar Gêneros:
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedGenres([])}
-                  className={`px-2.5 py-1 rounded-lg border-2 border-ink text-[11px] font-bold uppercase transition-all whitespace-nowrap ${
-                    selectedGenres.length === 0
-                      ? "bg-ink text-surface shadow-[2px_2px_0px_#161616]"
-                      : "bg-surface text-ink hover:bg-muted"
-                  }`}
-                >
-                  Todos ({songs.length})
-                </button>
-                {availableGenres.map((g) => {
-                  const isSelected = selectedGenres.includes(g);
-                  const count = songs.filter((s) => s.genre?.toLowerCase() === g.toLowerCase()).length;
-                  return (
-                    <button
+              {/* Selected Genres Active Tags (if any) */}
+              {selectedGenres.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[10px] font-bold text-dim uppercase tracking-wider font-[family-name:var(--font-dm-sans)]">
+                    Ativos:
+                  </span>
+                  {selectedGenres.map((g) => (
+                    <span
                       key={g}
-                      type="button"
-                      onClick={() => toggleGenre(g)}
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border-2 border-ink text-[11px] font-bold uppercase transition-all whitespace-nowrap ${
-                        isSelected
-                          ? "bg-accent-lime text-ink shadow-[2px_2px_0px_#161616]"
-                          : "bg-surface text-ink hover:bg-muted opacity-80 hover:opacity-100"
-                      }`}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent-lime border border-ink rounded-lg text-[10px] font-bold uppercase text-ink shadow-[1px_1px_0px_#161616]"
                     >
-                      {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                       <span>{g}</span>
-                      <span className="text-[10px] opacity-75">({count})</span>
-                    </button>
-                  );
-                })}
-              </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleGenre(g)}
+                        className="hover:text-accent-cherry transition-colors"
+                        title={`Remover ${g}`}
+                      >
+                        <X className="w-2.5 h-2.5 stroke-[3]" />
+                      </button>
+                    </span>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedGenres([])}
+                    className="text-[10px] font-bold uppercase text-dim hover:text-accent-cherry underline ml-1"
+                  >
+                    Limpar todos
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Modal Body */}
