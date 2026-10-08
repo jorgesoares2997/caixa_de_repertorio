@@ -155,9 +155,9 @@ public class SongController {
                 : null;
 
         // Block duplicate songs
-        List<Song> duplicates = songRepository.findDuplicates(cleanTitle, cleanComposer);
-        if (!duplicates.isEmpty()) {
-            Song existing = duplicates.get(0);
+        java.util.Optional<Song> duplicateOpt = findDuplicateSong(null, cleanTitle, cleanComposer);
+        if (duplicateOpt.isPresent()) {
+            Song existing = duplicateOpt.get();
             String composerStr = existing.getComposer() != null ? " (" + existing.getComposer() + ")" : "";
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
                     "error", "DUPLICATE_SONG",
@@ -214,9 +214,9 @@ public class SongController {
                 : null;
 
         // Block duplicate songs with other IDs
-        List<Song> duplicates = songRepository.findDuplicatesExcludingId(id, cleanTitle, cleanComposer);
-        if (!duplicates.isEmpty()) {
-            Song existing = duplicates.get(0);
+        java.util.Optional<Song> duplicateOpt = findDuplicateSong(id, cleanTitle, cleanComposer);
+        if (duplicateOpt.isPresent()) {
+            Song existing = duplicateOpt.get();
             String composerStr = existing.getComposer() != null ? " (" + existing.getComposer() + ")" : "";
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
                     "error", "DUPLICATE_SONG",
@@ -320,5 +320,19 @@ public class SongController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=portfolio.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdfBytes);
+    }
+
+    private java.util.Optional<Song> findDuplicateSong(UUID excludeId, String cleanTitle, String cleanComposer) {
+        List<Song> matchingTitles = songRepository.findByTitleIgnoreCase(cleanTitle);
+        return matchingTitles.stream()
+                .filter(s -> excludeId == null || !s.getId().equals(excludeId))
+                .filter(s -> {
+                    String existingComposer = s.getComposer() != null && !s.getComposer().trim().isBlank() ? s.getComposer().trim() : null;
+                    if (cleanComposer == null) {
+                        return existingComposer == null;
+                    }
+                    return cleanComposer.equalsIgnoreCase(existingComposer);
+                })
+                .findFirst();
     }
 }
