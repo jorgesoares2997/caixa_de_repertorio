@@ -268,6 +268,14 @@ export const useAppStore = create<AppState>()(
           songs: state.songs.map((s) =>
             s.id === id ? { ...s, masteryLevel: level } : s
           ),
+          representativeSongsCache: Object.fromEntries(
+            Object.entries(state.representativeSongsCache).map(([repId, repSongs]) => [
+              repId,
+              repSongs.map((rs) =>
+                rs.songId === id ? { ...rs, masteryLevel: level } : rs
+              ),
+            ])
+          ),
           stats: state.stats
             ? {
                 ...state.stats,

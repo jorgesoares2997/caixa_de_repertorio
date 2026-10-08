@@ -48,6 +48,7 @@ export default function RepresentativesPage() {
   const addRepresentative = useAppStore((state) => state.addRepresentative);
   const updateRepresentative = useAppStore((state) => state.updateRepresentative);
   const deleteRepresentative = useAppStore((state) => state.deleteRepresentative);
+  const updateMastery = useAppStore((state) => state.updateMastery);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
@@ -132,6 +133,18 @@ export default function RepresentativesPage() {
         ? prev.filter((g) => g !== genre)
         : [...prev, genre]
     );
+  };
+
+  const handleMasteryChange = async (songId: string, newLevel: number) => {
+    // Optimistic local state update in modal
+    setSongs((prev) =>
+      prev.map((s) => (s.songId === songId ? { ...s, masteryLevel: newLevel } : s))
+    );
+    try {
+      await updateMastery(songId, newLevel);
+    } catch (err) {
+      console.error("[RepresentativesPage] Erro ao atualizar domínio da música:", err);
+    }
   };
 
   // Reload songs after adding an intersection
@@ -726,7 +739,11 @@ export default function RepresentativesPage() {
                               </span>
                             </td>
                             <td className="py-3 px-4">
-                              <MasteryRating level={song.masteryLevel} size="sm" readOnly />
+                              <MasteryRating
+                                level={song.masteryLevel}
+                                size="sm"
+                                onChange={(lvl) => handleMasteryChange(song.songId, lvl)}
+                              />
                             </td>
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-2 flex-wrap">
@@ -793,7 +810,11 @@ export default function RepresentativesPage() {
                           <span className="text-[10px] font-bold uppercase tracking-wider text-dim font-[family-name:var(--font-dm-sans)]">
                             Domínio:
                           </span>
-                          <MasteryRating level={song.masteryLevel} size="sm" readOnly />
+                          <MasteryRating
+                            level={song.masteryLevel}
+                            size="sm"
+                            onChange={(lvl) => handleMasteryChange(song.songId, lvl)}
+                          />
                         </div>
 
                         {/* Bottom: Intersections & Link Button */}
