@@ -419,9 +419,18 @@ export const useAppStore = create<AppState>()(
         const res = await fetch(`${API_URL}/api/representatives/${id}`, {
           method: "DELETE",
         });
-        if (!res.ok) throw new Error("Falha ao excluir artista/projeto.");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => null);
+          throw new Error(errData?.message || "Falha ao excluir artista/projeto do servidor.");
+        }
         set((state) => ({
           representatives: state.representatives.filter((r) => r.id !== id),
+          songs: state.songs.map((s) => ({
+            ...s,
+            representativeLinks: (s.representativeLinks || []).filter(
+              (l) => l.representativeId !== id
+            ),
+          })),
           lastFetchedRepresentatives: Date.now(),
           representativeSongsCache: {},
         }));

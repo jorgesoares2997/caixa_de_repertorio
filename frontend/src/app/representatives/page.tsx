@@ -240,10 +240,13 @@ export default function RepresentativesPage() {
     setIsDeleting(true);
     try {
       await deleteRepresentative(deletingRep.id);
+      if (selectedRep?.id === deletingRep.id) {
+        setSelectedRep(null);
+      }
       setDeletingRep(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erro ao excluir artista.");
+      alert(err?.message || "Erro ao excluir artista.");
     } finally {
       setIsDeleting(false);
     }
@@ -470,8 +473,35 @@ export default function RepresentativesPage() {
                 </p>
               </div>
 
-              {/* PDF Preview Trigger & Close */}
-              <div className="flex items-center gap-3 w-full md:w-auto">
+              {/* PDF Preview Trigger & Actions */}
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <button
+                  type="button"
+                  title="Editar Informações do Artista"
+                  onClick={() => {
+                    setFormData({
+                      name: selectedRep.name,
+                      type: selectedRep.type,
+                      contactInfo: selectedRep.contactInfo || "",
+                    });
+                    setEditingRep(selectedRep);
+                  }}
+                  className="p-2.5 border-2 border-ink rounded-xl bg-surface hover:bg-accent-lime text-ink transition-colors shadow-[2px_2px_0px_#161616]"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  title="Excluir Artista"
+                  onClick={() => {
+                    setDeletingRep(selectedRep);
+                  }}
+                  className="p-2.5 border-2 border-ink rounded-xl bg-surface hover:bg-accent-cherry hover:text-surface text-ink transition-colors shadow-[2px_2px_0px_#161616]"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+
                 <StickerPillButton
                   variant="lavender"
                   onClick={handleOpenPdfPreview}

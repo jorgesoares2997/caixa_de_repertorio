@@ -105,8 +105,7 @@ public class RepresentativeController {
         return representativeRepository.findById(id)
                 .map(rep -> {
                     // Remove links in representative_songs
-                    List<RepresentativeSong> songs = representativeSongRepository.findByRepresentativeIdWithSong(id);
-                    representativeSongRepository.deleteAll(songs);
+                    representativeSongRepository.deleteByRepresentativeId(id);
 
                     // Unlink from gigs
                     gigRepository.findAll().stream()
@@ -119,7 +118,7 @@ public class RepresentativeController {
                     representativeRepository.delete(rep);
                     return ResponseEntity.ok(Map.of("message", "Projeto/Artista excluído com sucesso", "id", id));
                 })
-                .orElse(ResponseEntity.notFound().build());
+                .orElseGet(() -> ResponseEntity.status(404).body(Map.of("message", "Artista ou projeto não encontrado.")));
     }
 
     @GetMapping("/{id}/export-pdf")
