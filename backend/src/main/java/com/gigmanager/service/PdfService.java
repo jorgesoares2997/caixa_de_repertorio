@@ -138,6 +138,10 @@ public class PdfService {
     }
 
     public byte[] generateRepresentativeRepertoirePdf(Representative representative, List<RepresentativeSong> songs, String groupBy, String sortBy) {
+        return generateRepresentativeRepertoirePdf(representative, songs, groupBy, sortBy, null);
+    }
+
+    public byte[] generateRepresentativeRepertoirePdf(Representative representative, List<RepresentativeSong> songs, String groupBy, String sortBy, String customTitle) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             PdfWriter writer = new PdfWriter(baos);
             PdfDocument pdf = new PdfDocument(writer);
@@ -147,7 +151,8 @@ public class PdfService {
             
             Document document = new Document(pdf);
 
-            document.add(new Paragraph("Repertório Oficial • " + representative.getName())
+            String titleName = (customTitle != null && !customTitle.isBlank()) ? customTitle.trim() : representative.getName();
+            document.add(new Paragraph("Repertório Oficial • " + titleName)
                     .setFontSize(20)
                     .setBold()
                     .setTextAlignment(TextAlignment.CENTER));

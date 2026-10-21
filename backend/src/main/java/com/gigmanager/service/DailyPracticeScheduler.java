@@ -1,9 +1,15 @@
 package com.gigmanager.service;
 
 import com.gigmanager.domain.DailyPracticeLog;
+import com.gigmanager.domain.Representative;
+import com.gigmanager.domain.RepresentativeSong;
 import com.gigmanager.domain.Song;
+import com.gigmanager.domain.WeeklyPracticeConfig;
 import com.gigmanager.repository.DailyPracticeLogRepository;
+import com.gigmanager.repository.RepresentativeRepository;
+import com.gigmanager.repository.RepresentativeSongRepository;
 import com.gigmanager.repository.SongRepository;
+import com.gigmanager.repository.WeeklyPracticeConfigRepository;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -11,16 +17,20 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.temporal.TemporalAdjusters;
+import java.util.*;
 
 @Service
 public class DailyPracticeScheduler {
 
     private final SongRepository songRepository;
     private final DailyPracticeLogRepository practiceLogRepository;
+    private final RepresentativeRepository representativeRepository;
+    private final RepresentativeSongRepository representativeSongRepository;
+    private final WeeklyPracticeConfigRepository configRepository;
     private final JavaMailSender mailSender;
 
     @Value("${spring.mail.username:jorgesoares2997@gmail.com}")
@@ -29,32 +39,136 @@ public class DailyPracticeScheduler {
     public DailyPracticeScheduler(
             SongRepository songRepository,
             DailyPracticeLogRepository practiceLogRepository,
+            RepresentativeRepository representativeRepository,
+            RepresentativeSongRepository representativeSongRepository,
+            WeeklyPracticeConfigRepository configRepository,
             JavaMailSender mailSender
     ) {
         this.songRepository = songRepository;
         this.practiceLogRepository = practiceLogRepository;
+        this.representativeRepository = representativeRepository;
+        this.representativeSongRepository = representativeSongRepository;
+        this.configRepository = configRepository;
         this.mailSender = mailSender;
     }
 
-    public List<Song> getTodayPracticeSongs() {
-        List<Song> practiceList = new ArrayList<>();
-        // 2 songs level 1-2 (Dense Acquisition / learning)
-        practiceList.addAll(songRepository.findRandomSongsByMasteryLevels(List.of(1, 2), 2));
-        // 2 songs level 3-4 (Technical maintenance / polishing)
-        practiceList.addAll(songRepository.findRandomSongsByMasteryLevels(List.of(3, 4), 2));
-        // 1 song level 5 (Language maintenance / mastery)
-        practiceList.addAll(songRepository.findRandomSongsByMasteryLevels(List.of(5), 1));
+    /**
+     * Retrieves the active weekly focus configuration.
+     * If the current date is after the configured Sunday, the focus is considered expired and is cleaned up.
+     */
+    public Optional<WeeklyPracticeConfig> getActiveWeeklyConfig() {
+        Optional<WeeklyPracticeConfig> opt = configRepository.findById("DEFAULT");
+        if (opt.isEmpty()) {
+            return Optional.empty();
+        }
 
-        // If list is small due to distribution, complete with random
-        if (practiceList.size() < 5) {
-            List<Song> fallback = songRepository.findRandomSongsByMasteryLevels(List.of(1, 2, 3, 4, 5), 5 - practiceList.size());
-            for (Song s : fallback) {
-                if (!practiceList.contains(s)) {
-                    practiceList.add(s);
+        WeeklyPracticeConfig config = opt.get();
+        LocalDate today = LocalDate.now();
+
+        if (config.getExpiresAt() != null && today.isAfter(config.getExpiresAt())) {
+            // Expired on Sunday! Automatically reset to general repertoire
+            configRepository.deleteById("DEFAULT");
+            System.out.println("[DailyPracticeScheduler] Foco semanal expirou no domingo (" + config.getExpiresAt() + "). Voltando para modo Geral.");
+            return Optional.empty();
+        }
+
+        if (config.getRepresentativeIds() == null || config.getRepresentativeIds().isBlank()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(config);
+    }
+
+    /**
+     * Parses active representative UUIDs from the active weekly configuration.
+     */
+    public List<UUID> getActiveWeeklyRepresentativeIds() {
+        return getActiveWeeklyConfig()
+                .map(cfg -> Arrays.stream(cfg.getRepresentativeIds().split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isBlank())
+                        .map(UUID::fromString)
+                        .toList())
+                .orElse(Collections.emptyList());
+    }
+
+    /**
+     * Saves or clears the weekly focus. Valid until the upcoming Sunday (end of week).
+     */
+    public WeeklyPracticeConfig saveWeeklyFocus(List<UUID> representativeIds) {
+        LocalDate today = LocalDate.now();
+        LocalDate currentSunday = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+
+        if (representativeIds == null || representativeIds.isEmpty()) {
+            configRepository.deleteById("DEFAULT");
+            return WeeklyPracticeConfig.builder()
+                    .id("DEFAULT")
+                    .representativeIds("")
+                    .expiresAt(currentSunday)
+                    .build();
+        }
+
+        String joinedIds = String.join(",", representativeIds.stream().map(UUID::toString).toList());
+        WeeklyPracticeConfig config = WeeklyPracticeConfig.builder()
+                .id("DEFAULT")
+                .representativeIds(joinedIds)
+                .expiresAt(currentSunday)
+                .build();
+
+        return configRepository.save(config);
+    }
+
+    /**
+     * Selects today's practice songs.
+     * If overrideRepresentativeIds is provided, filters by those artists.
+     * Otherwise, checks the active weekly focus. If no active weekly focus, selects from general repertoire.
+     */
+    public List<Song> getTodayPracticeSongs(List<UUID> overrideRepresentativeIds) {
+        List<UUID> repIds = (overrideRepresentativeIds != null && !overrideRepresentativeIds.isEmpty())
+                ? overrideRepresentativeIds
+                : getActiveWeeklyRepresentativeIds();
+
+        List<Song> practiceList = new ArrayList<>();
+
+        if (!repIds.isEmpty()) {
+            // Draw from selected artists
+            // 2 songs level 1-2 (Dense Acquisition)
+            practiceList.addAll(songRepository.findRandomSongsByRepresentativesAndMasteryLevels(repIds, List.of(1, 2), 2));
+            // 2 songs level 3-4 (Polishing / Maintenance)
+            practiceList.addAll(songRepository.findRandomSongsByRepresentativesAndMasteryLevels(repIds, List.of(3, 4), 2));
+            // 1 song level 5 (Fluency / Mastered)
+            practiceList.addAll(songRepository.findRandomSongsByRepresentativesAndMasteryLevels(repIds, List.of(5), 1));
+
+            // If not enough songs due to mastery distribution, complete with any songs from the selected artists
+            if (practiceList.size() < 5) {
+                List<Song> fallback = songRepository.findRandomSongsByRepresentatives(repIds, 5 - practiceList.size());
+                for (Song s : fallback) {
+                    if (!practiceList.contains(s) && practiceList.size() < 5) {
+                        practiceList.add(s);
+                    }
+                }
+            }
+        } else {
+            // General repertoire selection across all songs
+            practiceList.addAll(songRepository.findRandomSongsByMasteryLevels(List.of(1, 2), 2));
+            practiceList.addAll(songRepository.findRandomSongsByMasteryLevels(List.of(3, 4), 2));
+            practiceList.addAll(songRepository.findRandomSongsByMasteryLevels(List.of(5), 1));
+
+            if (practiceList.size() < 5) {
+                List<Song> fallback = songRepository.findRandomSongsByMasteryLevels(List.of(1, 2, 3, 4, 5), 5 - practiceList.size());
+                for (Song s : fallback) {
+                    if (!practiceList.contains(s)) {
+                        practiceList.add(s);
+                    }
                 }
             }
         }
+
         return practiceList;
+    }
+
+    public List<Song> getTodayPracticeSongs() {
+        return getTodayPracticeSongs(null);
     }
 
     public String getDrillTypeForLevel(Integer level) {
@@ -64,15 +178,27 @@ public class DailyPracticeScheduler {
         return "Manutenção de Linguagem: crie uma introdução autoral, rearmonize trechos e pratique solos/linhas melódicas improvisadas.";
     }
 
-    // Disparo automático programado: padrão às 08:00 todos os dias (customizável via app.practice.cron)
-    @Scheduled(cron = "${app.practice.cron:0 0 8 * * *}")
+    /**
+     * Automatic scheduled practice email: daily at 08:00 AM (America/Sao_Paulo timezone).
+     */
+    @Scheduled(cron = "${app.practice.cron:0 0 8 * * *}", zone = "${app.practice.zone:America/Sao_Paulo}")
     public void scheduleDailyPractice() {
-        sendDailyPracticeEmail(mailFrom);
+        System.out.println("[DailyPracticeScheduler] Executing scheduled daily practice email at 08:00 BRT...");
+        sendDailyPracticeEmail(mailFrom, null);
     }
 
     public boolean sendDailyPracticeEmail(String recipientEmail) {
-        List<Song> practiceList = getTodayPracticeSongs();
+        return sendDailyPracticeEmail(recipientEmail, null);
+    }
+
+    public boolean sendDailyPracticeEmail(String recipientEmail, List<UUID> overrideRepresentativeIds) {
+        List<UUID> repIds = (overrideRepresentativeIds != null && !overrideRepresentativeIds.isEmpty())
+                ? overrideRepresentativeIds
+                : getActiveWeeklyRepresentativeIds();
+
+        List<Song> practiceList = getTodayPracticeSongs(repIds);
         if (practiceList.isEmpty()) {
+            System.err.println("[DailyPracticeScheduler] No songs available to send in daily practice email.");
             return false;
         }
 
@@ -92,19 +218,35 @@ public class DailyPracticeScheduler {
             practiceLogRepository.save(log);
         }
 
+        // Fetch representative names and active Sunday expiration if filtered
+        List<String> repNames = new ArrayList<>();
+        LocalDate expiresAt = null;
+        if (!repIds.isEmpty()) {
+            List<Representative> reps = representativeRepository.findAllById(repIds);
+            for (Representative r : reps) {
+                repNames.add(r.getName());
+            }
+            expiresAt = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+        }
+
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
             helper.setFrom(mailFrom, "Caixa de Repertório");
+            helper.setReplyTo(mailFrom);
             helper.setTo(targetEmail);
-            helper.setSubject("🎸 Rotina de Estudo Diário • " + formattedDate);
 
-            String htmlContent = buildHtmlEmail(practiceList, formattedDate);
+            String subject = repNames.isEmpty()
+                    ? "🎸 Rotina de Estudo Diário • " + formattedDate
+                    : "🎸 Rotina de Estudo [" + String.join(" + ", repNames) + "] • " + formattedDate;
+            helper.setSubject(subject);
+
+            String htmlContent = buildHtmlEmail(practiceList, formattedDate, repNames, expiresAt);
             helper.setText(htmlContent, true);
 
             mailSender.send(mimeMessage);
-            System.out.println("[DailyPracticeScheduler] Successfully sent daily practice email to " + targetEmail);
+            System.out.println("[DailyPracticeScheduler] Successfully sent daily practice email to " + targetEmail + " (Focus: " + (repNames.isEmpty() ? "Geral" : repNames) + ")");
             return true;
         } catch (Exception e) {
             System.err.println("[DailyPracticeScheduler] Failed to send email to " + targetEmail + ": " + e.getMessage());
@@ -113,7 +255,37 @@ public class DailyPracticeScheduler {
         }
     }
 
-    private String buildHtmlEmail(List<Song> songs, String dateStr) {
+    /**
+     * Resolves artist specific performance key and name for a song if linked.
+     */
+    public Map<String, String> getArtistLinkForSong(UUID songId, List<UUID> repFilterIds) {
+        List<RepresentativeSong> links = representativeSongRepository.findBySongIdWithRepresentative(songId);
+        if (links.isEmpty()) return Collections.emptyMap();
+
+        RepresentativeSong target = null;
+        if (repFilterIds != null && !repFilterIds.isEmpty()) {
+            for (RepresentativeSong rs : links) {
+                if (rs.getRepresentative() != null && repFilterIds.contains(rs.getRepresentative().getId())) {
+                    target = rs;
+                    break;
+                }
+            }
+        }
+        if (target == null) {
+            target = links.get(0);
+        }
+
+        Map<String, String> map = new HashMap<>();
+        if (target.getRepresentative() != null) {
+            map.put("artistName", target.getRepresentative().getName());
+        }
+        if (target.getPerformanceKey() != null && !target.getPerformanceKey().isBlank()) {
+            map.put("performanceKey", target.getPerformanceKey());
+        }
+        return map;
+    }
+
+    private String buildHtmlEmail(List<Song> songs, String dateStr, List<String> artistNames, LocalDate expiresAt) {
         StringBuilder sb = new StringBuilder();
         sb.append("<!DOCTYPE html><html><head><meta charset='UTF-8'>");
         sb.append("<style>");
@@ -124,8 +296,8 @@ public class DailyPracticeScheduler {
         sb.append(".title { margin: 0; font-size: 26px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; }");
         sb.append(".subtitle { margin-top: 6px; font-size: 13px; opacity: 0.8; }");
         sb.append(".content { padding: 24px; }");
+        sb.append(".focus-banner { background: #E9D5FF; border: 2px solid #161616; border-radius: 12px; padding: 12px 16px; margin-bottom: 20px; box-shadow: 2px 2px 0px #161616; }");
         sb.append(".song-card { background: #F4F4F5; border: 2px solid #161616; border-radius: 14px; padding: 16px; margin-bottom: 16px; box-shadow: 3px 3px 0px #161616; }");
-        sb.append(".song-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }");
         sb.append(".song-title { font-size: 17px; font-weight: 800; text-transform: uppercase; margin: 0; color: #161616; }");
         sb.append(".song-composer { font-size: 12px; color: #71717A; font-weight: 600; margin: 2px 0 0 0; }");
         sb.append(".key-badge { display: inline-block; background: #E9D5FF; color: #161616; font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px; border: 1.5px solid #161616; }");
@@ -143,13 +315,31 @@ public class DailyPracticeScheduler {
         sb.append("</div>");
 
         sb.append("<div class='content'>");
+
+        if (artistNames != null && !artistNames.isEmpty()) {
+            String expStr = expiresAt != null ? expiresAt.format(DateTimeFormatter.ofPattern("dd/MM")) : "domingo";
+            sb.append("<div class='focus-banner'>");
+            sb.append("<div style='font-weight: 900; font-size: 13px; text-transform: uppercase; color: #161616; display: flex; align-items: center; gap: 6px;'>");
+            sb.append("🎯 FOCO SEMANAL ATIVO: ").append(String.join(" • ", artistNames));
+            sb.append("</div>");
+            sb.append("<div style='font-size: 11px; font-weight: 600; color: #52525B; margin-top: 3px;'>");
+            sb.append("Sugestões filtradas exclusivamente para os shows desta semana. Válido até domingo (").append(expStr).append("), quando retornará ao modo Geral.");
+            sb.append("</div>");
+            sb.append("</div>");
+        }
+
         sb.append("<p style='font-size: 14px; font-weight: 600; margin-bottom: 20px;'>Aqui estão as 5 faixas selecionadas estrategicamente para o seu estudo de hoje:</p>");
 
         for (int i = 0; i < songs.size(); i++) {
             Song s = songs.get(i);
             String drill = getDrillTypeForLevel(s.getMasteryLevel());
-            String key = s.getOriginalKey() != null ? s.getOriginalKey() : "C";
+            String origKey = s.getOriginalKey() != null ? s.getOriginalKey() : "C";
             String genre = s.getGenre() != null ? s.getGenre() : "Geral";
+
+            // Check artist performance key
+            Map<String, String> linkInfo = getArtistLinkForSong(s.getId(), null);
+            String displayKey = linkInfo.getOrDefault("performanceKey", origKey);
+            String artistName = linkInfo.get("artistName");
 
             String levelColor = "#FF6B00";
             String levelBg = "#FFEDD5";
@@ -162,10 +352,14 @@ public class DailyPracticeScheduler {
             sb.append("<table width='100%' style='border-collapse: collapse;'><tr>");
             sb.append("<td>");
             sb.append("<div class='song-title'>").append(i + 1).append(". ").append(s.getTitle()).append("</div>");
-            sb.append("<div class='song-composer'>").append(s.getComposer() != null ? s.getComposer() : "Compositor não informado").append(" • ").append(genre).append("</div>");
+            sb.append("<div class='song-composer'>").append(s.getComposer() != null ? s.getComposer() : "Compositor não informado").append(" • ").append(genre);
+            if (artistName != null && !artistName.isBlank()) {
+                sb.append(" <b style='color: #161616;'>[🎤 ").append(artistName).append("]</b>");
+            }
+            sb.append("</div>");
             sb.append("</td>");
             sb.append("<td align='right'>");
-            sb.append("<span class='key-badge'>Tom: ").append(key).append("</span>");
+            sb.append("<span class='key-badge'>Tom: ").append(displayKey).append("</span>");
             sb.append("</td></tr></table>");
 
             sb.append("<div style='margin-top: 8px;'>");

@@ -128,7 +128,8 @@ public class RepresentativeController {
             @RequestParam(required = false) String genre,
             @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = "COMPOSER") String groupBy,
-            @RequestParam(required = false, defaultValue = "TITLE") String sortBy) {
+            @RequestParam(required = false, defaultValue = "TITLE") String sortBy,
+            @RequestParam(required = false) String customTitle) {
 
         Representative representative = representativeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Representative not found"));
@@ -185,10 +186,11 @@ public class RepresentativeController {
                     .collect(Collectors.toList());
         }
 
-        byte[] pdfBytes = pdfService.generateRepresentativeRepertoirePdf(representative, songs, groupBy, sortBy);
+        byte[] pdfBytes = pdfService.generateRepresentativeRepertoirePdf(representative, songs, groupBy, sortBy, customTitle);
+        String downloadName = (customTitle != null && !customTitle.isBlank()) ? customTitle.trim() : representative.getName();
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"repertorio_" + representative.getName().replaceAll("\\s+", "_") + ".pdf\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"repertorio_" + downloadName.replaceAll("\\s+", "_") + ".pdf\"")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdfBytes);
     }

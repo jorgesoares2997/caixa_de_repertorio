@@ -15,6 +15,24 @@ public interface SongRepository extends JpaRepository<Song, UUID> {
     @Query(value = "SELECT * FROM songs WHERE mastery_level IN :levels ORDER BY RANDOM() LIMIT :limit", nativeQuery = true)
     List<Song> findRandomSongsByMasteryLevels(List<Integer> levels, int limit);
 
+    @Query(value = "SELECT * FROM songs WHERE id IN (" +
+                   "  SELECT rs.song_id FROM representative_songs rs WHERE rs.representative_id IN (:representativeIds)" +
+                   ") AND mastery_level IN (:levels) " +
+                   "ORDER BY RANDOM() LIMIT :limit", nativeQuery = true)
+    List<Song> findRandomSongsByRepresentativesAndMasteryLevels(
+            @Param("representativeIds") List<UUID> representativeIds,
+            @Param("levels") List<Integer> levels,
+            @Param("limit") int limit);
+
+    @Query(value = "SELECT * FROM songs WHERE id IN (" +
+                   "  SELECT rs.song_id FROM representative_songs rs WHERE rs.representative_id IN (:representativeIds)" +
+                   ") ORDER BY RANDOM() LIMIT :limit", nativeQuery = true)
+    List<Song> findRandomSongsByRepresentatives(
+            @Param("representativeIds") List<UUID> representativeIds,
+            @Param("limit") int limit);
+
+
     @Query("SELECT s FROM Song s WHERE LOWER(s.title) = LOWER(:title)")
     List<Song> findByTitleIgnoreCase(@Param("title") String title);
 }
+
