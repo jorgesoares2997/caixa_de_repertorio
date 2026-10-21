@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Edit3, Check, Plus, Tag, X } from "lucide-react";
+import { useAppStore } from "@/lib/store";
 
-const SUGGESTED_GENRES = [
+const DEFAULT_GENRES = [
   "MPB",
   "Bossa Nova",
   "Samba",
@@ -38,6 +39,24 @@ export function GenreBadgePicker({
   const [isSaving, setIsSaving] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const storeGenres = useAppStore((state) => state.genres);
+  const fetchGenres = useAppStore((state) => state.fetchGenres);
+  const addCustomGenre = useAppStore((state) => state.addCustomGenre);
+
+  useEffect(() => {
+    if (storeGenres.length === 0) {
+      fetchGenres();
+    }
+  }, [storeGenres.length, fetchGenres]);
+
+  // Combine default genres with database genres
+  const availableGenres = Array.from(
+    new Set([
+      ...DEFAULT_GENRES,
+      ...storeGenres.map((g) => g.name),
+    ])
+  );
 
   const displayGenre = genre?.trim() || "Geral";
 
@@ -84,11 +103,25 @@ export function GenreBadgePicker({
     }
   };
 
-  const handleCustomSubmit = (e: React.FormEvent) => {
+  const handleCustomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!customGenre.trim()) return;
-    handleSelect(customGenre);
+    const clean = customGenre.trim();
+    if (!clean) return;
+
+    // If it's a completely new genre not yet in store, register it
+    const exists = availableGenres.some(
+      (g) => g.toLowerCase() === clean.toLowerCase()
+    );
+    if (!exists) {
+      try {
+        await addCustomGenre(clean);
+      } catch (err) {
+        // Non-blocking if visitor or already exists
+      }
+    }
+
+    handleSelect(clean);
   };
 
   return (
@@ -148,10 +181,10 @@ export function GenreBadgePicker({
           {/* Quick Suggestions Pills */}
           <div className="space-y-1.5 mb-3">
             <span className="text-[10px] font-bold text-dim uppercase tracking-wider font-[family-name:var(--font-dm-sans)] block">
-              Gêneros Frequentes:
+              Gêneros Frequentes & Customizados:
             </span>
             <div className="flex flex-wrap gap-1 max-h-36 overflow-y-auto pr-1">
-              {SUGGESTED_GENRES.map((g) => {
+              {availableGenres.map((g) => {
                 const isCurrent =
                   (g === "Geral" && !genre) ||
                   genre?.toLowerCase() === g.toLowerCase();

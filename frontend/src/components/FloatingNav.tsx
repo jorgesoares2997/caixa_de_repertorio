@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { StickerPillButton } from "./StickerPillButton";
-import { Plus, Home, Music2, Users, Calendar, Sparkles, LogOut, Shield, Eye, LogIn } from "lucide-react";
+import { Plus, Home, Music2, Users, Calendar, Sparkles, LogOut, Shield, Eye, LogIn, BarChart3 } from "lucide-react";
 import { ReactNode } from "react";
 import { useAppStore } from "@/lib/store";
 
@@ -61,6 +61,12 @@ export function FloatingNav() {
             label="Início" 
             icon={<Home className="w-4 h-4" />} 
             current={pathname === "/"} 
+          />
+          <NavLink 
+            href="/dashboard" 
+            label="Dashboard" 
+            icon={<BarChart3 className="w-4 h-4" />} 
+            current={pathname === "/dashboard"} 
           />
           <NavLink 
             href="/songs" 

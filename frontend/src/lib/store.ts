@@ -80,6 +80,86 @@ export type Stats = {
   nextGigVenue: string | null;
 };
 
+export type GenreItem = {
+  id?: string;
+  name: string;
+  count: number;
+  averageMastery: number;
+  level5Count: number;
+  color: string;
+  isCustom: boolean;
+};
+
+export type EvolutionSong = {
+  historyId?: string;
+  songId: string;
+  title: string;
+  composer?: string;
+  artistName?: string;
+  genre?: string;
+  previousLevel: number;
+  newLevel: number;
+  levelGain?: number;
+  changedAt: string;
+  rawDate?: string;
+};
+
+export type DashboardData = {
+  period: string;
+  since?: string;
+  overallReadiness: {
+    totalSongs: number;
+    level5Songs?: number;
+    readyForStageCount?: number;
+    readinessPercentage?: number;
+    readyPercentage?: number;
+  };
+  topMasteredGenre: {
+    name?: string;
+    genre?: string;
+    averageMastery: number;
+    level5Count: number;
+    totalSongs: number;
+    percentageOfGenreLevel5?: number;
+    color: string;
+    isCustom?: boolean;
+    summary?: string;
+  } | null;
+  artistStats: Array<{
+    artistId: string;
+    artistName: string;
+    artistType: string;
+    totalSongs: number;
+    levelBreakdown: Record<string, number>;
+    averageMastery: number;
+    masteredCount: number;
+    masteredPercentage: number;
+  }>;
+  genreStats: Array<{
+    name?: string;
+    genre?: string;
+    count: number;
+    percentage?: number;
+    percentageOfRepertoire?: number;
+    averageMastery: number;
+    level5Count: number;
+    color: string;
+    isCustom?: boolean;
+  }>;
+  evolutionStats: {
+    period: string;
+    totalEvolutions?: number;
+    totalEvolved?: number;
+    evolvedSongsCount?: number;
+    timeline: Array<{
+      date?: string;
+      label: string;
+      count: number;
+    }>;
+    evolvedSongs: EvolutionSong[];
+  };
+};
+
 interface AppState {
   // Auth state
   currentUser: AuthUser | null;
@@ -98,18 +178,21 @@ interface AppState {
   representativeSongsCache: Record<string, RepresentativeSong[]>;
   gigs: Gig[];
   stats: Stats | null;
+  genres: GenreItem[];
 
   // Cache Timestamps (ms)
   lastFetchedSongs: number | null;
   lastFetchedRepresentatives: number | null;
   lastFetchedGigs: number | null;
   lastFetchedStats: number | null;
+  lastFetchedGenres: number | null;
 
   // Loading flags
   isLoadingSongs: boolean;
   isLoadingRepresentatives: boolean;
   isLoadingGigs: boolean;
   isLoadingStats: boolean;
+  isLoadingGenres: boolean;
 
   // Actions - Songs
   fetchSongs: (force?: boolean) => Promise<Song[]>;
@@ -129,11 +212,17 @@ interface AppState {
   // Actions - Gigs
   fetchGigs: (force?: boolean) => Promise<Gig[]>;
 
-  // Actions - Stats
+  // Actions - Stats & Dashboard
   fetchStats: (force?: boolean) => Promise<Stats | null>;
+  fetchDashboardData: (period?: string) => Promise<DashboardData | null>;
+
+  // Actions - Genres
+  fetchGenres: (force?: boolean) => Promise<GenreItem[]>;
+  addCustomGenre: (name: string, color?: string) => Promise<GenreItem>;
+  deleteCustomGenre: (id: string) => Promise<void>;
 
   // Cache Invalidation & Manual Reset
-  invalidateCache: (key?: "songs" | "representatives" | "gigs" | "stats" | "all") => void;
+  invalidateCache: (key?: "songs" | "representatives" | "gigs" | "stats" | "genres" | "all") => void;
   clearAllCache: () => void;
 }
 
@@ -190,16 +279,19 @@ export const useAppStore = create<AppState>()(
       representativeSongsCache: {},
       gigs: [],
       stats: null,
+      genres: [],
 
       lastFetchedSongs: null,
       lastFetchedRepresentatives: null,
       lastFetchedGigs: null,
       lastFetchedStats: null,
+      lastFetchedGenres: null,
 
       isLoadingSongs: false,
       isLoadingRepresentatives: false,
       isLoadingGigs: false,
       isLoadingStats: false,
+      isLoadingGenres: false,
 
       // --- SONGS ---
       fetchSongs: async (force = false) => {
@@ -572,6 +664,84 @@ export const useAppStore = create<AppState>()(
         return get().stats;
       },
 
+      fetchDashboardData: async (period = "month") => {
+        try {
+          const res = await fetch(`${API_URL}/api/analytics/dashboard?period=${period}`);
+          if (res.ok) {
+            const data: DashboardData = await res.json();
+            return data;
+          }
+        } catch (err) {
+          console.error("[useAppStore] Error fetching dashboard data:", err);
+        }
+        return null;
+      },
+
+      // --- GENRES ---
+      fetchGenres: async (force = false) => {
+        const { genres, lastFetchedGenres } = get();
+        const now = Date.now();
+        const isFresh = lastFetchedGenres && now - lastFetchedGenres < CACHE_TTL;
+
+        if (!force && genres.length > 0 && isFresh) {
+          return genres;
+        }
+
+        set({ isLoadingGenres: true });
+        try {
+          const res = await fetch(`${API_URL}/api/genres`);
+          if (res.ok) {
+            const data: GenreItem[] = await res.json();
+            set({
+              genres: data,
+              lastFetchedGenres: Date.now(),
+              isLoadingGenres: false,
+            });
+            return data;
+          }
+        } catch (err) {
+          console.error("[useAppStore] Error fetching genres:", err);
+        } finally {
+          set({ isLoadingGenres: false });
+        }
+        return get().genres;
+      },
+
+      addCustomGenre: async (name: string, color?: string) => {
+        const token = get().currentUser?.token;
+        const res = await fetch(`${API_URL}/api/genres`, {
+          method: "POST",
+          headers: getAuthHeaders(token),
+          body: JSON.stringify({ name: name.trim(), color }),
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => null);
+          throw new Error(errData?.message || "Falha ao criar estilo musical.");
+        }
+        const created: GenreItem = await res.json();
+        set((state) => ({
+          genres: [...state.genres.filter((g) => g.name.toLowerCase() !== created.name.toLowerCase()), created],
+          lastFetchedGenres: Date.now(),
+        }));
+        return created;
+      },
+
+      deleteCustomGenre: async (id: string) => {
+        const token = get().currentUser?.token;
+        const res = await fetch(`${API_URL}/api/genres/${id}`, {
+          method: "DELETE",
+          headers: getAuthHeaders(token),
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => null);
+          throw new Error(errData?.message || "Falha ao remover estilo musical.");
+        }
+        set((state) => ({
+          genres: state.genres.filter((g) => g.id !== id),
+          lastFetchedGenres: Date.now(),
+        }));
+      },
+
       // --- CACHE MANAGEMENT ---
       invalidateCache: (key) => {
         if (!key || key === "all") {
@@ -581,6 +751,7 @@ export const useAppStore = create<AppState>()(
             representativeSongsCache: {},
             lastFetchedGigs: null,
             lastFetchedStats: null,
+            lastFetchedGenres: null,
           });
         } else if (key === "songs") {
           set({ lastFetchedSongs: null, representativeSongsCache: {} });
@@ -590,6 +761,8 @@ export const useAppStore = create<AppState>()(
           set({ lastFetchedGigs: null });
         } else if (key === "stats") {
           set({ lastFetchedStats: null });
+        } else if (key === "genres") {
+          set({ lastFetchedGenres: null });
         }
       },
 
@@ -603,10 +776,12 @@ export const useAppStore = create<AppState>()(
           representativeSongsCache: {},
           gigs: [],
           stats: null,
+          genres: [],
           lastFetchedSongs: null,
           lastFetchedRepresentatives: null,
           lastFetchedGigs: null,
           lastFetchedStats: null,
+          lastFetchedGenres: null,
         });
       },
     }),
@@ -623,10 +798,12 @@ export const useAppStore = create<AppState>()(
         representativeSongsCache: state.representativeSongsCache,
         gigs: state.gigs,
         stats: state.stats,
+        genres: state.genres,
         lastFetchedSongs: state.lastFetchedSongs,
         lastFetchedRepresentatives: state.lastFetchedRepresentatives,
         lastFetchedGigs: state.lastFetchedGigs,
         lastFetchedStats: state.lastFetchedStats,
+        lastFetchedGenres: state.lastFetchedGenres,
       }),
     }
   )

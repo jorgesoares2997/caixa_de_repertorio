@@ -29,6 +29,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.gigmanager.domain.SongMasteryHistory;
+import com.gigmanager.repository.SongMasteryHistoryRepository;
+import java.time.LocalDateTime;
+
 @RestController
 @RequestMapping("/api/songs")
 @CrossOrigin(origins = "*") // Allows Next.js to access this locally
@@ -39,6 +43,7 @@ public class SongController {
     private final RepresentativeSongRepository representativeSongRepository;
     private final GigItemRepository gigItemRepository;
     private final DailyPracticeLogRepository dailyPracticeLogRepository;
+    private final SongMasteryHistoryRepository masteryHistoryRepository;
     private final PdfService pdfService;
 
     public SongController(
@@ -47,6 +52,7 @@ public class SongController {
             RepresentativeSongRepository representativeSongRepository,
             GigItemRepository gigItemRepository,
             DailyPracticeLogRepository dailyPracticeLogRepository,
+            SongMasteryHistoryRepository masteryHistoryRepository,
             PdfService pdfService
     ) {
         this.songRepository = songRepository;
@@ -54,8 +60,10 @@ public class SongController {
         this.representativeSongRepository = representativeSongRepository;
         this.gigItemRepository = gigItemRepository;
         this.dailyPracticeLogRepository = dailyPracticeLogRepository;
+        this.masteryHistoryRepository = masteryHistoryRepository;
         this.pdfService = pdfService;
     }
+
 
     private SongDTO convertToDTO(Song song, List<RepresentativeSong> repSongs) {
         List<RepresentativeLinkDTO> linkDTOs = new ArrayList<>();
@@ -271,12 +279,26 @@ public class SongController {
         return songRepository.findById(id)
                 .map(song -> {
                     if (body.containsKey("level") && body.get("level") != null) {
-                        song.setMasteryLevel(body.get("level"));
+                        Integer oldLevel = song.getMasteryLevel();
+                        Integer newLevel = body.get("level");
+                        song.setMasteryLevel(newLevel);
+                        
+                        try {
+                            masteryHistoryRepository.save(SongMasteryHistory.builder()
+                                    .song(song)
+                                    .previousLevel(oldLevel)
+                                    .newLevel(newLevel)
+                                    .changedAt(LocalDateTime.now())
+                                    .build());
+                        } catch (Exception e) {
+                            System.err.println("[SongController] Could not save mastery history: " + e.getMessage());
+                        }
                     }
                     return ResponseEntity.ok(songRepository.save(song));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
+
 
     @PatchMapping("/{id}/genre")
     public ResponseEntity<SongDTO> updateSongGenre(@PathVariable UUID id, @RequestBody Map<String, String> body) {

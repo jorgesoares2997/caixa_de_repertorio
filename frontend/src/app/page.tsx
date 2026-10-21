@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { StickerPillButton } from "@/components/StickerPillButton";
 import { DailyPracticeModal } from "@/components/DailyPracticeModal";
-import { Calendar, Flame, Users, Music2, Mail, ArrowRight, Sparkles } from "lucide-react";
+import { Calendar, Flame, Users, Music2, Mail, ArrowRight, Sparkles, BarChart3, TrendingUp } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import Link from "next/link";
 
@@ -38,7 +38,7 @@ export default function Dashboard() {
         </h1>
 
         <p className="text-lg md:text-xl text-dim max-w-2xl mb-10 font-[family-name:var(--font-inter)] leading-relaxed">
-          Gerencie acervos, vincule repertório exclusivo a cada cantor, estude diariamente com rotinas inteligentes e gere setlists prontas.
+          Gerencie acervos, vincule repertório exclusivo a cada cantor, estude diariamente com rotinas inteligentes e acompanhe gráficos de evolução.
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-4">
@@ -51,11 +51,19 @@ export default function Dashboard() {
           </StickerPillButton>
 
           <StickerPillButton
+            variant="lavender"
+            onClick={() => window.location.href = "/dashboard"}
+            icon={<BarChart3 className="w-4 h-4 text-ink" />}
+          >
+            Ver Dashboard & Gráficos
+          </StickerPillButton>
+
+          <StickerPillButton
             variant="orange"
             onClick={() => setIsPracticeOpen(true)}
             icon={<Flame className="w-4 h-4 text-surface fill-surface" />}
           >
-            Estudo Diário de Hoje
+            Estudo Diário
           </StickerPillButton>
         </div>
       </section>
@@ -117,6 +125,38 @@ export default function Dashboard() {
             >
               {isAdmin ? "Ver Sessão & Disparar" : "Ver Sugestões de Estudo"}
             </StickerPillButton>
+          </div>
+        </div>
+      </section>
+
+      {/* Dashboard & Analytics Teaser Section */}
+      <section className="px-4 max-w-6xl mx-auto w-full">
+        <div className="bg-surface rounded-3xl p-6 md:p-8 border-2 border-ink shadow-neo flex flex-col lg:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-accent-lavender text-ink border-2 border-ink flex items-center justify-center shrink-0 shadow-[2px_2px_0px_#161616]">
+              <BarChart3 className="w-8 h-8" />
+            </div>
+            <div>
+              <div className="inline-block bg-accent-lavender text-ink border border-ink/40 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider mb-1 font-[family-name:var(--font-dm-sans)]">
+                Novo Recurso
+              </div>
+              <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-ink font-[family-name:var(--font-oswald)]">
+                Dashboard de Performance & Métricas
+              </h3>
+              <p className="text-xs md:text-sm text-dim font-medium mt-0.5 max-w-2xl">
+                Veja quantas músicas você domina por artista, distribuição de estilos musicais e histórico de evolução técnica no último ano, mês ou semana.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0 w-full lg:w-auto">
+            <Link
+              href="/dashboard"
+              className="w-full lg:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border-2 border-ink bg-accent-lime text-ink font-black uppercase tracking-wider text-xs shadow-[3px_3px_0px_#161616] hover:bg-accent-lime/90 hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1.5px_1.5px_0px_#161616] transition-all font-[family-name:var(--font-dm-sans)]"
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span>Explorar Gráficos & Estilos</span>
+            </Link>
           </div>
         </div>
       </section>
