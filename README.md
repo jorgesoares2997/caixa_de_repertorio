@@ -1,270 +1,166 @@
 <div align="center">
-  <img src="frontend/public/logo.jpg" alt="Caixa de Repertório" width="160" style="border-radius: 24px;" />
+  <img src="public/logo.jpg" alt="Caixa de Repertório logo" width="120" style="border-radius: 20px;" />
 </div>
 
-<br />
+<h1 align="center">Caixa de Repertório</h1>
 
-# Caixa de Repertório
+<div align="center">
+  <a href="https://github.com/jorgesoares2997/caixa_de_repertorio">
+    <img src="https://img.shields.io/badge/GitHub-Repository-black?style=for-the-badge&logo=github" alt="GitHub Repository" />
+  </a>
+  <a href="https://nextjs.org/">
+    <img src="https://img.shields.io/badge/Frontend-Next.js%2016-black?style=for-the-badge&logo=next.js" alt="Next.js 16" />
+  </a>
+  <a href="https://spring.io/projects/spring-boot">
+    <img src="https://img.shields.io/badge/Backend-Spring%20Boot%203-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" alt="Spring Boot 3" />
+  </a>
+  <a href="https://neon.tech/">
+    <img src="https://img.shields.io/badge/Database-Neon%20Postgres-00E599?style=for-the-badge&logo=postgresql&logoColor=black" alt="Neon Postgres" />
+  </a>
+  <a href="https://github.com/EvolutionAPI/evolution-api">
+    <img src="https://img.shields.io/badge/WhatsApp-Evolution%20API-25D366?style=for-the-badge&logo=whatsapp&logoColor=white" alt="Evolution API" />
+  </a>
+</div>
 
-> **Seu repertório musical na ponta dos dedos, sem perder nenhum tom.**
+## 🎯 O problema que o projeto resolve
+Músicos profissionais, diretores musicais e bandas enfrentam uma desorganização frequente ao gerenciar repertórios extensos com múltiplos cantores e formações instrumentais distintas:
+* **Tons Divergentes:** A mesma canção é executada em *F#m* com um cantor, em *Am* com outro artista e em *Em* no formato voz e violão. A falta de registro centralizado gera erros críticos em cima do palco.
+* **Falta de Método no Estudo Diário:** Dificuldade em priorizar o que estudar antes do próximo show, sem clareza de quais músicas estão consolidadas (nível 5) e quais necessitam de revisão urgente de harmonia ou estrutura.
+* **Processos Manuais e Atrito de Comunicação:** Digitar setlists manualmente no WhatsApp minutos antes do show, copiar e colar cifras dispersas ou perder anotações em blocos de papel.
+* **Equilíbrio entre Portfólio e Privacidade Artística:** Necessidade de apresentar um sistema 100% funcional em portfólio público sem expor contatos privados ou nomes de artistas parceiros sob sigilo profissional.
 
-Caixa de Repertório (GigManager) é uma plataforma completa e moderna para músicos, diretores musicais, bandas e cantores gerenciarem seu acervo completo de canções, níveis de domínio técnico (1 a 5), intersecções de tons por artista, montagem dinâmica de setlists por blocos, exportação profissional de acervo em PDF e envio instantâneo de escalas no WhatsApp via Evolution API.
+O **Caixa de Repertório** unifica todo o ciclo musical em uma plataforma moderna e tátil com estética **Neo-Brutalista**, combinando cache instantâneo de zero latência, matriz relacional de tons por projeto, rotinas diárias automatizadas de estudo com foco semanal, envio instantâneo de escalas no WhatsApp via Evolution API e exportação profissional de acervos em PDF vetorial.
 
-[![GitHub](https://img.shields.io/badge/GitHub-Repository-black?style=for-the-badge&logo=github)](https://github.com/jorgesoares2997/caixa_de_repertorio)
-[![Next.js 16](https://img.shields.io/badge/Frontend-Next.js%2016-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-[![Spring Boot](https://img.shields.io/badge/Backend-Spring%20Boot%203-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![Neon Postgres](https://img.shields.io/badge/Database-Neon%20Postgres-00E599?style=for-the-badge&logo=postgresql&logoColor=black)](https://neon.tech/)
-[![Evolution API](https://img.shields.io/badge/WhatsApp-Evolution%20API-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://github.com/EvolutionAPI/evolution-api)
+## 🛠 Tecnologias utilizadas
+- **Frontend & UI**: [Next.js (v16)](https://nextjs.org/) com App Router e Turbopack, [React (v19)](https://react.dev/).
+- **Linguagens**: [TypeScript](https://www.typescriptlang.org/) no ecossistema cliente e [Java 17](https://www.oracle.com/java/) no ecossistema servidor.
+- **Estilização & Componentes**: [Tailwind CSS (v4)](https://tailwindcss.com/) com design system Neo-Brutalista de alto contraste (bordas sólidas, drop shadows táteis e paleta neon), [Lucide React](https://lucide.dev/) para ícones e [Framer Motion](https://www.framer.com/motion/) para transições fluidas.
+- **Gerenciamento de Estado & Cache**: [Zustand 5](https://zustand-demo.pmnd.rs/) com persistência no `localStorage` (carregamento otimista em 0ms).
+- **Tabelas & Filtros Dinâmicos**: [TanStack React Table (v8)](https://tanstack.com/table/v8) para paginação, ordenação multi-coluna e busca global via atalho de teclado (`/`).
+- **Backend & API**: [Spring Boot 3 (v3.3.4)](https://spring.io/projects/spring-boot), Spring Data JPA, Hibernate ORM, Bean Validation e arquitetura em camadas (Controllers, Services, Repositories, DTOs).
+- **Banco de Dados & Migrações**: [Neon Serverless PostgreSQL](https://neon.tech/) com connection pooling de alta performance e versionamento declarativo via [Flyway](https://flywaydb.org/) (`V1`, `V2`, `V3`).
+- **Comunicação & Mensageria**: [Spring Boot Starter Mail](https://spring.io/) com JavaMailSender (SMTP TLS Gmail) para automação da rotina diária de estudos e integração com a [Evolution API](https://github.com/EvolutionAPI/evolution-api) para envio programático de setlists no WhatsApp.
+- **Motor de PDF**: [iText 7 Core (v8.0.2)](https://itextpdf.com/) para geração de partituras/repertórios em PDF vetorial de alta definição com paginação dinâmica e sumário segmentado.
+- **Automação & Tarefas**: Spring `@Scheduled` com suporte a timezone explícito (`America/Sao_Paulo`) para rotina de estudo matinal às 08:00 com algoritmo de retenção balanceada.
 
----
-
-## 🎯 Problem Statement
-
-Músicos profissionais e bandas enfrentam desorganização constante ao lidar com múltiplos projetos, formações e cantores diferentes:
-* **Tons divergentes:** A mesma música é tocada em *Fá* com um cantor e em *Lá* com outro.
-* **Falta de controle de estudo:** Dificuldade de saber quais músicas estão 100% memorizadas e quais precisam de revisão antes do show.
-* **Comunicação truncada:** Ter que digitar manualmente setlists no WhatsApp minutos antes de subir ao palco.
-* **Perda de repertório:** Cadernos e blocos de notas dispersos sem backup unificado.
-
-O **Caixa de Repertório** resolve esse problema unificando todo o ciclo musical em uma interface neo-brutalista de altíssima performance, com cache instantâneo e automações de palco.
-
----
-
-## ✨ Principais Funcionalidades
-
-### 🎼 1. Acervo Central & Gestão de Domínio (CRUD Completo)
-- **Catálogo Unificado:** Mais de 240+ obras cadastradas com título, compositor, gênero musical, tom original, andamento (BPM) e notas de arranjo/cifra.
-- **Níveis de Domínio Visual (1 a 5):**
-  - `1`: Aprendendo / Estrutura básica
-  - `2`: Em ensaio / Decorando
-  - `3`: Toca com cifra / Seguro
-  - `4`: Muito seguro / De cor
-  - `5`: 100% Dominado / Pronto para palco
-- **Busca Global & Filtros Dinâmicos:** Filtre por gêneros (*MPB, Bossa Nova, Samba, Jazz Standards, Pop, Soul, Forró*) e busque instantaneamente com o atalho `/`.
-
-### 👥 2. Artistas, Projetos & Matriz de Tons (Intersecções)
-- Visualize repertórios exclusivos por projeto ou cantor (ex: *Luiza Salles, Sophia, Geral*).
-- **Matriz de Intersecção:** Identifique rapidamente em quais tons cada artista canta a mesma música para nunca errar a harmonia.
-- **Exportação Segmentada:** Gere PDFs organizados por compositor ou gênero musical para cada cantor com 1 clique.
-
-### 🎪 3. Construtor de Shows & Setlists por Blocos
-- Arraste e adicione músicas do acervo diretamente para blocos de show (*Bloco 1, Bloco 2, Bis*).
-- Ajuste e memorize tons específicos de execução diretamente na grade do show.
-- Reordenação e cálculo dinâmico de faixas.
-
-### 📲 4. Disparo de Escalas no WhatsApp (Evolution API)
-- Envio instantâneo da escala formatada direto para o WhatsApp do grupo ou músico com 1 clique.
-- Inclui data, local, ordem das faixas, blocos e tons de cada música em negrito e emojis elegantes.
-
-### 📄 5. Motor de PDF Profissional (iText 7)
-- Geração de relatórios tipográficos de alta fidelidade para impressão ou leitura em tablet na estante.
-- Inclui paginação dinâmica, cabeçalhos, rodapés com data/hora e divisão limpa por artista e gênero.
-
-### ⚡ 6. Cache Offline & Instantâneo com Zustand
-- Persistência no `localStorage` com carregamento em **0ms** (zero tela branca).
-- Atualizações otimistas para notas, novos cadastros e avaliações de domínio.
-
----
-
-## 🏗️ Arquitetura do Sistema
-
-```
-┌──────────────────────────────────────────────────────────┐
-│  Next.js 16 (Turbopack) + Tailwind CSS v4               │
-│  Zustand (LocalStorage Cache) · TanStack Table v8       │
-│  Framer Motion · Lucide React · Neo-Brutalist UI        │
-└────────────────────────┬─────────────────────────────────┘
-                         │ REST API (JSON)
-┌────────────────────────▼─────────────────────────────────┐
-│  Spring Boot 3 + Java 17/21 (Maven)                      │
-│  Spring Data JPA · Hibernate · Transactional Services   │
-│  iText 7 Core Engine (PDFs) · Spring Mail (SMTP)         │
-└────────────────────────┬─────────────────────────────────┘
-                         │
-         ┌───────────────┴───────────────┐
-         │                               │
-┌────────▼─────────────────┐   ┌─────────▼────────────────┐
-│  Neon Serverless Postgres│   │  Evolution API Gateway   │
-│  Flyway Schema History   │   │  WhatsApp Webhook & Send │
-│  Branching & Pooling     │   │  Multi-Device Baileys    │
-└──────────────────────────┘   └──────────────────────────┘
-```
-
----
-
-## 🛠️ Tech Stack
-
-| Camada | Tecnologia | Detalhes |
-|---|---|---|
-| **Frontend** | Next.js 16 · React 19 · TypeScript | App Router, Turbopack, Server/Client components |
-| **Estilização** | Tailwind CSS v4 | Design Neo-Brutalista com paleta de alto contraste |
-| **State & Cache** | Zustand 5 | Persistência local (`localStorage`), atualizações otimistas |
-| **Tabelas & Filtros** | TanStack React Table v8 | Paginação, ordenação multi-coluna e busca global |
-| **Animações & Ícones** | Framer Motion · Lucide React | Micro-interações táteis e feedback visual |
-| **Backend** | Spring Boot 3 · Java 17 | REST Controllers, DTOs, JPA Entities |
-| **Banco de Dados** | Neon PostgreSQL | Serverless Postgres com pooled connection string |
-| **Migrações** | Flyway | Versionamento declarativo de banco de dados (`V1__init.sql`) |
-| **PDF Engine** | iText 7 Core (8.0.2) | Relatórios PDF vetoriais customizados com paginação |
-| **WhatsApp Integration**| Evolution API | Envio programático de mensagens para números e grupos |
-| **E-mail / Notificações**| Spring Boot Starter Mail | Notificações SMTP (Gmail) e práticas diárias |
-
----
-
-## 🗄️ Modelo de Dados (Database Schema)
-
-| Tabela | Descrição | Campos Principais |
-|---|---|---|
-| `songs` | Catálogo de obras musicais | `id`, `title`, `composer`, `genre`, `original_key`, `mastery_level`, `tempo_bpm`, `notes` |
-| `representatives` | Artistas, cantores e projetos | `id`, `name`, `type`, `contact_info`, `active` |
-| `representative_songs` | Matriz de tons e notas por artista | `id`, `representative_id`, `song_id`, `performance_key`, `specific_notes` |
-| `gigs` | Shows e apresentações agendadas | `id`, `representative_id`, `title`, `event_date`, `venue`, `notes` |
-| `gig_items` | Músicas da grade do show | `id`, `gig_id`, `song_id`, `order_index`, `performance_key`, `block_number` |
-| `daily_practice_logs` | Histórico e metas de estudo diário | `id`, `song_id`, `practice_date`, `drill_type`, `completed` |
-
----
-
-## 📲 Integração WhatsApp (Evolution API)
-
-Quando o usuário clica em **"Enviar no WhatsApp"**, o backend monta uma mensagem elegante e despacha para a API:
-
-```text
-🎸 ESCALA DO SHOW: Blue Note SP
-📅 Data: 15/10/2026 às 21:00
-📍 Local: Blue Note São Paulo
-🎤 Projeto: Luiza Salles
-
-📌 BLOCO 1
-1. [A] Linha do Equador (Djavan)
-2. [F] Flor de Lis (Djavan)
-3. [C] Capim (Djavan)
-
-📌 BLOCO 2
-4. [Ebm] Superstition (Stevie Wonder)
-5. [G] Sina (Djavan)
-
-📌 BIS
-6. [F] Beiral (Djavan)
-
-🔥 Bom show a todos! Grooves afiados!
-```
-
----
-
-## 💻 Desenvolvimento Local (Guia Passo a Passo)
+## 🚀 Como rodar ou acessar o projeto
 
 ### Pré-requisitos
-- **Node.js 20+** e **pnpm** (ou npm)
-- **Java 17 ou 21** e **Maven 3.9+**
-- Instância do **PostgreSQL** ou conta no **Neon**
+- **Node.js (v20+)** e gerenciador de pacotes **pnpm** (ou npm)
+- **Java Development Kit (JDK 17)** e **Apache Maven (v3.9+)**
+- Conta ou instância do **PostgreSQL** (ou banco serverless no [Neon](https://neon.tech/))
 
 ---
 
-### 1. Clonar o Repositório
+### Instalação e Execução local
 
+#### 1. Clonar o repositório
 ```bash
 git clone https://github.com/jorgesoares2997/caixa_de_repertorio.git
 cd caixa_de_repertorio
 ```
 
----
+#### 2. Configurar e rodar o Backend (Spring Boot)
+1. Crie ou configure o arquivo `backend/.env`:
+   ```env
+   # Neon PostgreSQL
+   SPRING_DATASOURCE_URL=jdbc:postgresql://<neon_host>/neondb?sslmode=require
+   SPRING_DATASOURCE_USERNAME=neondb_owner
+   SPRING_DATASOURCE_PASSWORD=your_neon_password
 
-### 2. Configurar e Rodar o Backend (Spring Boot)
+   # SMTP Gmail para Envio de Rotina Diária
+   SPRING_MAIL_HOST=smtp.gmail.com
+   SPRING_MAIL_PORT=587
+   SPRING_MAIL_USERNAME=seu_email@gmail.com
+   SPRING_MAIL_PASSWORD=sua_senha_de_aplicativo_gmail
+   SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true
+   SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true
+   APP_PRACTICE_ZONE=America/Sao_Paulo
 
-1. Crie o arquivo `backend/.env` ou configure as variáveis de ambiente:
-
-```env
-SPRING_DATASOURCE_URL=jdbc:postgresql://<neon_host>/neondb?sslmode=require
-SPRING_DATASOURCE_USERNAME=neondb_owner
-SPRING_DATASOURCE_PASSWORD=your_neon_password
-
-# WhatsApp Evolution API (Opcional para envio de mensagens)
-EVOLUTION_API_URL=https://your-evolution-api-instance.com
-EVOLUTION_API_APIKEY=your_evolution_api_key
-EVOLUTION_API_INSTANCE=your_instance_name
-WHATSAPP_TARGET_NUMBER=5511999999999
-```
+   # WhatsApp Evolution API (Opcional)
+   EVOLUTION_API_URL=https://sua-instancia-evolution.com
+   EVOLUTION_API_APIKEY=sua_api_key
+   EVOLUTION_API_INSTANCE=seu_nome_instancia
+   WHATSAPP_TARGET_NUMBER=5511999999999
+   ```
 
 2. Execute o backend via Maven:
+   ```bash
+   cd backend
+   mvn clean spring-boot:run
+   ```
+   *O backend iniciará na porta `http://localhost:8080`.*
 
-```bash
-cd backend
-mvn clean spring-boot:run
-# Backend disponível em http://localhost:8080
-```
+#### 3. Configurar e rodar o Frontend (Next.js)
+1. Configure o arquivo `frontend/.env`:
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:8080
+   ```
+
+2. Instale as dependências e inicie o servidor:
+   ```bash
+   cd frontend
+   pnpm install
+   pnpm run dev
+   ```
+   *O frontend estará disponível em `http://localhost:3000`.*
 
 ---
 
-### 3. Popular o Banco de Dados (Seed Automático)
+### Setup do Banco de Dados (Neon Postgres & Flyway)
+O projeto utiliza o **Flyway** para migrações automatizadas. Ao inicializar o backend pela primeira vez, as seguintes migrações serão executadas diretamente no Neon:
+- `V1__init.sql`: Cria as tabelas de músicas, representantes/artistas, intersecções de tons, shows e logs de prática.
+- `V2__create_app_users.sql`: Criação da tabela de usuários administrativos e visitantes.
+- `V3__create_weekly_practice_config.sql`: Criação da tabela de persistência do foco semanal de artistas com expiração automática aos domingos.
 
-Para carregar as mais de 240+ músicas e cantores iniciais para o banco:
-
+*(Opcional)* Para popular o catálogo inicial com mais de 240+ canções clássicas:
 ```bash
 node backend/seed-neon.js
 ```
 
 ---
 
-### 4. Configurar e Rodar o Frontend (Next.js)
+### Automação de Notificações & Rotina Diária
+O sistema conta com um agendador automatizado no backend configurado em `DailyPracticeScheduler`:
+- **Disparo Diário**: Todos os dias pontualmente às **08:00 (Horário de Brasília)** para a caixa de e-mail cadastrada.
+- **Algoritmo de Retenção Espaçada**: Seleciona estrategicamente 2 músicas em aprendizado (nível 1-2), 2 em consolidação (nível 3-4) e 1 de manutenção rápida de palco (nível 5).
+- **Foco Semanal de Shows**: Caso haja artistas selecionados para a semana, o sorteio restringe-se exclusivamente aos repertórios e tons dessas apresentações, retornando ao modo Geral após o domingo.
 
-1. Configure o arquivo `frontend/.env`:
+## ✨ Principais funcionalidades
+- **Catálogo Unificado de Obras (CRUD Completo)**: Gestão de centenas de músicas com título, compositor, gênero, tom original, andamento em BPM e notas de cifra.
+- **Níveis de Domínio Visual (1 a 5)**: Acompanhamento da segurança de palco de cada canção (*1: Aprendendo, 2: Em ensaio, 3: Toca com cifra, 4: Seguro de cor, 5: Pronto para palco*).
+- **Matriz de Intersecção de Tons por Artista**: Visualização imediata dos tons específicos cantados por cada artista na mesma música, evitando divergências em ensaios.
+- **Foco Semanal de Shows com Expiração aos Domingos**: Possibilidade de restringir o sorteio do estudo diário para 1 ou múltiplos cantores da semana corrente, expirando automaticamente à meia-noite de domingo.
+- **Disparo de Rotina Diária por E-mail (HTML Formatado)**: E-mails responsivos com cards estéticos, tons de execução, BPM e foco de exercícios de aquecimento e memorização.
+- **Modo Visitante com Confidencialidade Artística**: Acesso livre à home page para demonstração de portfólio. Visitantes navegam pelas setlists com efeito de blur fosco (*frosted glass*), badge de identidade protegida e aviso de confidencialidade sem expor os nomes reais dos clientes.
+- **Exportação de Acervo em PDF Vetorial**: Motor iText 7 que gera relatórios para impressão ou leitura em tablet na estante, divididos por compositor ou gênero musical.
+- **Disparo de Escala no WhatsApp (Evolution API)**: Envio com 1 clique da ordem do show formatada por blocos, datas, horários e tons em negrito diretamente no grupo dos músicos.
 
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8080
-```
+## 🧠 Decisões técnicas tomadas
+- **Arquitetura Híbrida (Uso Real pelo Músico vs. Demonstração em Portfólio)**: Para conciliar o uso diário de Jorge Soares com a apresentação pública de seu código, implementou-se um controle de acesso via token assinado (`AuthInterceptor`). Visitantes têm permissão total de leitura para explorar o sistema, mas as operações de escrita são restritas e os dados sensíveis dos artistas são protegidos no backend e mascarados antes do envio ao DOM.
+- **Foco Semanal com Expiração Transitória no Banco de Dados**: Em vez de depender de controles manuais em que o usuário precisaria lembrar de desativar o filtro após as apresentações do final de semana, a tabela `weekly_practice_config` armazena a data do domingo (`expiresAt`). Ao virar a semana, o algoritmo identifica a expiração e retorna imediatamente para o modo Geral.
+- **Subqueries SQL Otimizadas para Sorteio Aleatório**: Para contornar limitações do PostgreSQL onde o uso de `DISTINCT` conflita com `ORDER BY RANDOM()`, o repositório utiliza subqueries com `IN (SELECT rs.song_id ...)` que eliminam redundâncias mantendo a aleatoriedade e tempo de resposta na casa dos milissegundos.
+- **Persistência Otimista com Zustand no Cliente**: A combinação de Zustand com `localStorage` viabilizou um carregamento em 0ms (zero tela branca). As alterações de nível de domínio e notas são refletidas na interface instantaneamente enquanto a sincronização ocorre em background.
+- **Timezone Explícito para Infraestrutura em Nuvem**: Servidores em nuvem (como Render e AWS) executam seus contêineres em UTC por padrão. A declaração explícita de `zone = "America/Sao_Paulo"` na anotação `@Scheduled` assegura que os e-mails de estudo matinal cheguem exatamente às 08:00 no fuso de Brasília.
 
-2. Instale as dependências e inicie o servidor de desenvolvimento:
+## 📸 Prints, vídeo, deploy ou exemplos de uso
 
-```bash
-cd frontend
-pnpm install
-pnpm run dev
-# Frontend disponível em http://localhost:3000
-```
+### Página Inicial (Dashboard & Métricas de Palco)
+![Página Inicial](public/home.png)
 
----
+### Catálogo Central de Repertório (Busca, Filtros & Domínio)
+![Catálogo de Acervo](public/acervo.png)
 
-## 📂 Estrutura do Repositório
+### Gestão de Artistas & Matriz de Tons
+![Gestão de Artistas e Projetos](public/projetos.png)
 
-```
-caixa_de_repertorio/
-├── backend/
-│   ├── src/main/java/com/gigmanager/
-│   │   ├── controller/         # SongController, GigController, RepresentativeController, StatsController
-│   │   ├── domain/             # Song, Representative, RepresentativeSong, Gig, GigItem
-│   │   ├── repository/         # Repositórios JPA e queries customizadas
-│   │   └── service/            # PdfService, EvolutionApiService, DailyPracticeScheduler
-│   ├── src/main/resources/
-│   │   ├── db/migration/       # V1__init.sql (Flyway)
-│   │   └── application.yml     # Configurações Spring Boot
-│   ├── seed-neon.js            # Script de carga inicial de repertório
-│   └── pom.xml                 # Dependências Maven (Spring Boot, iText 7, PostgreSQL, Lombok)
-│
-├── frontend/
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── page.tsx                # Dashboard com métricas e próximo show
-│   │   │   ├── songs/page.tsx          # Acervo central com tabela, filtros e CRUD
-│   │   │   ├── representatives/        # Projetos, artistas e repertório exclusivo
-│   │   │   ├── gigs/                   # Grade de shows e construtor de setlist
-│   │   │   └── not-found.tsx           # Página 404 temática musical
-│   │   ├── components/                 # SongFormModal, SongDetailModal, DeleteConfirmModal, MasteryRating, StickerPillButton
-│   │   └── lib/                        # store.ts (Zustand com persistência no LocalStorage)
-│   ├── public/                         # Assets, logotipos e ilustrações
-│   └── package.json                    # Dependências Next.js, TanStack Table, Zustand, Tailwind
-│
-├── repertorio_completo.json    # Acervo completo de referência (240+ obras)
-├── render.yaml                 # Configuração de deploy no Render
-└── README.md                   # Documentação do projeto
-```
+### Rotina de Estudo Diário & Foco Semanal por Artista
+![Rotina de Estudo Diário](public/rotina.png)
 
----
+### Autenticação Segura & Modo Portfólio para Visitantes
+![Tela de Login e Portfólio](public/login.png)
 
-## 📄 Licença
-
-Este projeto está sob a licença [MIT](LICENSE).
-
----
-
-<div align="center">
-  Desenvolvido com 🎵 e paixão por música por <b>Jorge Soares</b>.
-</div>
+## 🔮 Próximos passos de melhoria
+- **Player Integrado de Áudio & Cifras**: Visualizador dinâmico de cifras com player flutuante para reproduzir gravações de ensaio e áudios-guia enquanto acompanha a harmonia.
+- **Importação Automática via Spotify / Cifra Club**: Sincronização automática de tom original, autor e andamento a partir de links públicos de músicas.
+- **Modo Palco Offline (PWA)**: Transformar a visualização de setlists em Progressive Web App com suporte a pedal Bluetooth (troca de páginas) e rolagem automática ajustável ao BPM.
