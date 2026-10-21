@@ -26,14 +26,18 @@ spring:
           auth: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:true}
           starttls:
             enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:true}
-            required: true
+            required: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED:true}
           ssl:
+            enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_ENABLE:false}
             trust: "*"
           connectiontimeout: 10000
           timeout: 10000
           writetimeout: 10000
 
 app:
+  mail:
+    resend-api-key: ${RESEND_API_KEY:}
+    resend-from: ${RESEND_FROM:onboarding@resend.dev}
   practice:
     cron: ${APP_PRACTICE_CRON:0 0 8 * * *}
     zone: ${APP_PRACTICE_ZONE:America/Sao_Paulo}

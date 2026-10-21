@@ -10,6 +10,7 @@ import com.gigmanager.repository.RepresentativeRepository;
 import com.gigmanager.repository.RepresentativeSongRepository;
 import com.gigmanager.repository.SongRepository;
 import com.gigmanager.repository.WeeklyPracticeConfigRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -17,7 +18,13 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
@@ -35,6 +42,14 @@ public class DailyPracticeScheduler {
 
     @Value("${spring.mail.username:jorgesoares2997@gmail.com}")
     private String mailFrom;
+
+    @Value("${app.mail.resend-api-key:${RESEND_API_KEY:}}")
+    private String resendApiKey;
+
+    @Value("${app.mail.resend-from:${RESEND_FROM:onboarding@resend.dev}}")
+    private String resendFrom;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public DailyPracticeScheduler(
             SongRepository songRepository,
@@ -229,6 +244,18 @@ public class DailyPracticeScheduler {
             expiresAt = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
         }
 
+        String subject = repNames.isEmpty()
+                ? "🎸 Rotina de Estudo Diário • " + formattedDate
+                : "🎸 Rotina de Estudo [" + String.join(" + ", repNames) + "] • " + formattedDate;
+
+        String htmlContent = buildHtmlEmail(practiceList, formattedDate, repNames, expiresAt);
+
+        // 1. Prioritize HTTP REST API (Resend) - immune to cloud provider firewall blocking on ports 25, 465, 587
+        if (resendApiKey != null && !resendApiKey.isBlank()) {
+            return sendViaResend(targetEmail, subject, htmlContent);
+        }
+
+        // 2. Standard SMTP (JavaMailSender) fallback
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
@@ -236,20 +263,59 @@ public class DailyPracticeScheduler {
             helper.setFrom(mailFrom, "Caixa de Repertório");
             helper.setReplyTo(mailFrom);
             helper.setTo(targetEmail);
-
-            String subject = repNames.isEmpty()
-                    ? "🎸 Rotina de Estudo Diário • " + formattedDate
-                    : "🎸 Rotina de Estudo [" + String.join(" + ", repNames) + "] • " + formattedDate;
             helper.setSubject(subject);
-
-            String htmlContent = buildHtmlEmail(practiceList, formattedDate, repNames, expiresAt);
             helper.setText(htmlContent, true);
 
             mailSender.send(mimeMessage);
-            System.out.println("[DailyPracticeScheduler] Successfully sent daily practice email to " + targetEmail + " (Focus: " + (repNames.isEmpty() ? "Geral" : repNames) + ")");
+            System.out.println("[DailyPracticeScheduler] Successfully sent daily practice email via SMTP to " + targetEmail + " (Focus: " + (repNames.isEmpty() ? "Geral" : repNames) + ")");
             return true;
         } catch (Exception e) {
-            System.err.println("[DailyPracticeScheduler] Failed to send email to " + targetEmail + ": " + e.getMessage());
+            System.err.println("[DailyPracticeScheduler] Failed to send email via SMTP to " + targetEmail + ": " + e.getMessage());
+            System.err.println("[DailyPracticeScheduler] DIAGNÓSTICO: No Render (e outros hosts no plano gratuito), conexões de saída SMTP (portas 25, 465, 587) são bloqueadas por padrão, resultando em SocketTimeoutException.");
+            System.err.println("[DailyPracticeScheduler] SOLUÇÃO RECOMENDADA: Crie uma conta gratuita em https://resend.com e adicione a variável RESEND_API_KEY no painel do Render para envio via API HTTPS (porta 443).");
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Sends email via Resend HTTP REST API over port 443 (HTTPS).
+     * Works seamlessly in any cloud environment (Render, Railway, Fly.io, AWS) without SMTP port blocking.
+     */
+    private boolean sendViaResend(String targetEmail, String subject, String htmlContent) {
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            String from = (resendFrom != null && !resendFrom.isBlank()) ? resendFrom : "onboarding@resend.dev";
+            payload.put("from", "Caixa de Repertório <" + from + ">");
+            payload.put("to", List.of(targetEmail));
+            payload.put("subject", subject);
+            payload.put("html", htmlContent);
+
+            String json = objectMapper.writeValueAsString(payload);
+
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(10))
+                    .build();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.resend.com/emails"))
+                    .header("Authorization", "Bearer " + resendApiKey.trim())
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofSeconds(15))
+                    .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                System.out.println("[DailyPracticeScheduler] Successfully sent daily practice email via Resend API (HTTP 443) to " + targetEmail);
+                return true;
+            } else {
+                System.err.println("[DailyPracticeScheduler] Resend API error (" + response.statusCode() + "): " + response.body());
+                return false;
+            }
+        } catch (Exception e) {
+            System.err.println("[DailyPracticeScheduler] Failed to send email via Resend API: " + e.getMessage());
             e.printStackTrace();
             return false;
         }

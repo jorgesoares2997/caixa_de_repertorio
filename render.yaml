@@ -23,6 +23,12 @@ services:
         sync: false
       - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE
         sync: false
+      - key: SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_ENABLE
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        sync: false
       - key: EVOLUTION_API_URL
         sync: false
       - key: EVOLUTION_API_APIKEY
