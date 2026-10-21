@@ -22,7 +22,9 @@ import {
   Filter,
   UserPlus,
   ChevronDown,
+  Lock,
 } from "lucide-react";
+import { getMaskedArtistName, getMaskedBadgeName, getMaskedContactInfo } from "@/lib/artistPrivacy";
 import { StickerPillButton } from "@/components/StickerPillButton";
 import { MasteryRating } from "@/components/MasteryRating";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
@@ -49,6 +51,8 @@ export default function RepresentativesPage() {
   const updateRepresentative = useAppStore((state) => state.updateRepresentative);
   const deleteRepresentative = useAppStore((state) => state.deleteRepresentative);
   const updateMastery = useAppStore((state) => state.updateMastery);
+  const currentUser = useAppStore((state) => state.currentUser);
+  const isAdmin = currentUser?.role === "ADMIN";
 
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
@@ -181,6 +185,12 @@ export default function RepresentativesPage() {
         params.append("search", songSearch.trim());
       }
 
+      const repIndex = representatives.findIndex((r) => r.id === selectedRep.id);
+      const repDisplayName = getMaskedArtistName(selectedRep, repIndex >= 0 ? repIndex : 0, isAdmin);
+      if (!isAdmin) {
+        params.append("customTitle", repDisplayName);
+      }
+
       const response = await fetch(
         `${API_URL}/api/representatives/${selectedRep.id}/export-pdf?${params.toString()}`
       );
@@ -202,11 +212,13 @@ export default function RepresentativesPage() {
     if (!selectedRep || !previewPdfUrl) return;
     const a = document.createElement("a");
     a.href = previewPdfUrl;
+    const repIndex = representatives.findIndex((r) => r.id === selectedRep.id);
+    const displayName = getMaskedArtistName(selectedRep, repIndex >= 0 ? repIndex : 0, isAdmin);
     const genreSuffix =
       selectedGenres.length > 0
         ? `_${selectedGenres.map((g) => g.replace(/\s+/g, "_")).join("-")}`
         : "";
-    a.download = `repertorio_${selectedRep.name.replace(/\s+/g, "_")}${genreSuffix}.pdf`;
+    a.download = `repertorio_${displayName.replace(/[^a-zA-Z0-9_-]/g, "_")}${genreSuffix}.pdf`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -320,17 +332,37 @@ export default function RepresentativesPage() {
           </p>
         </div>
 
-        <StickerPillButton
-          variant="lime"
-          onClick={() => {
-            setFormData({ name: "", type: "SINGER", contactInfo: "" });
-            setIsCreateOpen(true);
-          }}
-          icon={<Plus className="w-4 h-4 text-surface" />}
-        >
-          Novo Artista / Projeto
-        </StickerPillButton>
+        {isAdmin && (
+          <StickerPillButton
+            variant="lime"
+            onClick={() => {
+              setFormData({ name: "", type: "SINGER", contactInfo: "" });
+              setIsCreateOpen(true);
+            }}
+            icon={<Plus className="w-4 h-4 text-surface" />}
+          >
+            Novo Artista / Projeto
+          </StickerPillButton>
+        )}
       </div>
+
+      {/* Visitor Privacy Notice */}
+      {!isAdmin && (
+        <div className="bg-surface border-2 border-ink rounded-2xl p-4 shadow-[4px_4px_0px_#161616] flex items-start sm:items-center gap-3.5 -mt-2">
+          <div className="w-10 h-10 rounded-xl bg-accent-lavender border-2 border-ink flex items-center justify-center shrink-0 shadow-[2px_2px_0px_#161616]">
+            <Lock className="w-5 h-5 text-ink" />
+          </div>
+          <div className="flex-1">
+            <h4 className="text-xs font-black uppercase tracking-wider text-ink font-[family-name:var(--font-dm-sans)] flex items-center gap-2">
+              <span>Confidencialidade Artística Ativa</span>
+              <span className="px-2 py-0.5 bg-accent-lime border border-ink rounded text-[10px] font-bold">Modo Portfólio</span>
+            </h4>
+            <p className="text-xs text-dim font-medium mt-0.5 leading-relaxed">
+              Dados bloqueados para proteger o nome dos artistas e manter a confidencialidade contratual de Jorge Soares. O acervo de músicas, os arranjos, tons e setlists continuam 100% navegáveis para demonstração técnica.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Filters Bar */}
       <div className="flex flex-col sm:flex-row gap-4">
@@ -374,6 +406,9 @@ export default function RepresentativesPage() {
         {filteredRepresentatives.map((rep, idx) => {
           const rotation = idx % 3 === 0 ? "rotate-1" : idx % 3 === 1 ? "-rotate-1" : "rotate-0";
           const typeLabel = REP_TYPE_LABELS[rep.type] || rep.type;
+          const repIndex = representatives.findIndex((r) => r.id === rep.id);
+          const displayName = getMaskedArtistName(rep, repIndex >= 0 ? repIndex : idx, isAdmin);
+          const displayContact = getMaskedContactInfo(rep.contactInfo, isAdmin);
 
           return (
             <div
@@ -387,62 +422,109 @@ export default function RepresentativesPage() {
                 </span>
 
                 {/* Edit & Delete Quick Actions */}
-                <div className="flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
-                  <button
-                    type="button"
-                    title="Editar Artista"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setFormData({
-                        name: rep.name,
-                        type: rep.type,
-                        contactInfo: rep.contactInfo || "",
-                      });
-                      setEditingRep(rep);
-                    }}
-                    className="p-1.5 border border-ink rounded-lg bg-surface hover:bg-accent-lime text-ink shadow-[1px_1px_0px_#161616]"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                  </button>
+                {isAdmin && (
+                  <div className="flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+                    <button
+                      type="button"
+                      title="Editar Artista"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFormData({
+                          name: rep.name,
+                          type: rep.type,
+                          contactInfo: rep.contactInfo || "",
+                        });
+                        setEditingRep(rep);
+                      }}
+                      className="p-1.5 border border-ink rounded-lg bg-surface hover:bg-accent-lime text-ink shadow-[1px_1px_0px_#161616]"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
 
-                  <button
-                    type="button"
-                    title="Excluir Artista"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeletingRep(rep);
-                    }}
-                    className="p-1.5 border border-ink rounded-lg bg-surface hover:bg-accent-cherry hover:text-surface text-ink shadow-[1px_1px_0px_#161616]"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      title="Excluir Artista"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeletingRep(rep);
+                      }}
+                      className="p-1.5 border border-ink rounded-lg bg-surface hover:bg-accent-cherry hover:text-surface text-ink shadow-[1px_1px_0px_#161616]"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Avatar Box */}
               <div
                 onClick={() => openModal(rep)}
-                className="w-full h-28 bg-canvas border-2 border-ink rounded-xl mb-4 flex items-center justify-center cursor-pointer group-hover:bg-accent-lime/20 transition-colors"
+                className="w-full h-28 bg-canvas border-2 border-ink rounded-xl mb-4 flex items-center justify-center cursor-pointer group-hover:bg-accent-lavender/25 transition-colors relative overflow-hidden"
               >
+                {!isAdmin && (
+                  <div className="absolute top-2 right-2 z-10">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-ink text-accent-lime text-[10px] font-black uppercase rounded-md shadow-sm font-[family-name:var(--font-dm-sans)]">
+                      <Lock className="w-2.5 h-2.5" /> Bloqueado
+                    </span>
+                  </div>
+                )}
                 <div className="w-14 h-14 bg-ink rounded-full flex items-center justify-center text-surface group-hover:scale-110 transition-transform shadow-[2px_2px_0px_#161616]">
-                  <User className="w-7 h-7 text-accent-lime" />
+                  {isAdmin ? (
+                    <User className="w-7 h-7 text-accent-lime" />
+                  ) : (
+                    <Lock className="w-7 h-7 text-accent-lavender" />
+                  )}
                 </div>
               </div>
 
               {/* Name & Contact */}
               <div onClick={() => openModal(rep)} className="cursor-pointer">
-                <h3 className="text-3xl font-black text-ink uppercase tracking-tight font-[family-name:var(--font-oswald)] group-hover:text-accent-orange transition-colors">
-                  {rep.name}
-                </h3>
-                {rep.contactInfo ? (
-                  <p className="text-xs font-bold text-dim mt-1 truncate font-[family-name:var(--font-dm-sans)] flex items-center gap-1.5">
-                    <Phone className="w-3 h-3 text-ink shrink-0" />
-                    {rep.contactInfo}
-                  </p>
+                {isAdmin ? (
+                  <>
+                    <h3 className="text-3xl font-black text-ink uppercase tracking-tight font-[family-name:var(--font-oswald)] group-hover:text-accent-orange transition-colors">
+                      {rep.name}
+                    </h3>
+                    {rep.contactInfo ? (
+                      <p className="text-xs font-bold text-dim mt-1 truncate font-[family-name:var(--font-dm-sans)] flex items-center gap-1.5">
+                        <Phone className="w-3 h-3 text-ink shrink-0" />
+                        {rep.contactInfo}
+                      </p>
+                    ) : (
+                      <p className="text-xs font-semibold text-dim/60 mt-1 italic font-[family-name:var(--font-dm-sans)]">
+                        Contato não cadastrado
+                      </p>
+                    )}
+                  </>
                 ) : (
-                  <p className="text-xs font-semibold text-dim/60 mt-1 italic font-[family-name:var(--font-dm-sans)]">
-                    Contato não cadastrado
-                  </p>
+                  /* Protected Visitor View with Frosted Blur & Professional Label */
+                  <div className="space-y-2">
+                    <div className="relative py-2.5 px-3 bg-canvas border-2 border-dashed border-ink/40 rounded-xl overflow-hidden group-hover:border-ink transition-colors">
+                      {/* Blurred decoy text */}
+                      <div className="filter blur-[6px] select-none pointer-events-none opacity-40">
+                        <span className="text-2xl font-black text-ink uppercase tracking-tight font-[family-name:var(--font-oswald)] block truncate">
+                          Nome do Artista Parceiro
+                        </span>
+                        <span className="text-[11px] font-bold text-dim block mt-0.5 truncate">
+                          +55 (11) 98765-4321 • @artista
+                        </span>
+                      </div>
+
+                      {/* Foreground Confidential Badge */}
+                      <div className="absolute inset-0 flex items-center justify-center bg-surface/40 backdrop-blur-[2px]">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-ink text-surface border border-ink rounded-lg shadow-sm">
+                          <Lock className="w-3.5 h-3.5 text-accent-lime shrink-0" />
+                          <span className="text-[11px] font-black uppercase tracking-wider font-[family-name:var(--font-dm-sans)]">
+                            Identidade Confidencial
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-dim font-[family-name:var(--font-dm-sans)]">
+                      <Lock className="w-3 h-3 text-ink shrink-0" />
+                      <span className="truncate">Dados bloqueados para proteger o nome dos artistas</span>
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -473,47 +555,72 @@ export default function RepresentativesPage() {
             <div className="px-6 md:px-8 py-5 border-b-2 border-ink flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-canvas">
               <div>
                 <div className="flex items-center gap-3">
-                  <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-ink font-[family-name:var(--font-oswald)]">
-                    {selectedRep.name}
-                  </h3>
-                  <span className="px-2.5 py-0.5 bg-accent-lavender border-2 border-ink rounded-lg text-xs font-bold uppercase font-[family-name:var(--font-dm-sans)]">
+                  {isAdmin ? (
+                    <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-ink font-[family-name:var(--font-oswald)]">
+                      {selectedRep.name}
+                    </h3>
+                  ) : (
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-surface border-2 border-ink rounded-xl shadow-[2px_2px_0px_#161616]">
+                      <Lock className="w-4 h-4 text-accent-cherry shrink-0" />
+                      <span className="text-xl md:text-2xl font-black uppercase tracking-tight text-ink font-[family-name:var(--font-oswald)]">
+                        Projeto Artístico Reservado
+                      </span>
+                    </div>
+                  )}
+
+                  <span className="px-2.5 py-1 bg-accent-lavender border-2 border-ink rounded-lg text-xs font-black uppercase font-[family-name:var(--font-dm-sans)]">
                     {REP_TYPE_LABELS[selectedRep.type] || selectedRep.type}
                   </span>
                 </div>
-                <p className="text-xs md:text-sm font-semibold text-dim mt-0.5 font-[family-name:var(--font-dm-sans)]">
-                  {selectedRep.contactInfo ? `Contato: ${selectedRep.contactInfo} · ` : ""}
-                  Total de {songs.length} músicas no repertório
+
+                <p className="text-xs md:text-sm font-semibold text-dim mt-1.5 font-[family-name:var(--font-dm-sans)] flex items-center gap-2">
+                  {!isAdmin ? (
+                    <>
+                      <span className="text-ink font-bold">🔒 Dados bloqueados para proteger o nome dos artistas</span>
+                      <span>·</span>
+                      <span>Total de {songs.length} músicas no repertório</span>
+                    </>
+                  ) : (
+                    <>
+                      {selectedRep.contactInfo ? `Contato: ${selectedRep.contactInfo} · ` : ""}
+                      Total de {songs.length} músicas no repertório
+                    </>
+                  )}
                 </p>
               </div>
 
               {/* PDF Preview Trigger & Actions */}
               <div className="flex items-center gap-2 w-full md:w-auto">
-                <button
-                  type="button"
-                  title="Editar Informações do Artista"
-                  onClick={() => {
-                    setFormData({
-                      name: selectedRep.name,
-                      type: selectedRep.type,
-                      contactInfo: selectedRep.contactInfo || "",
-                    });
-                    setEditingRep(selectedRep);
-                  }}
-                  className="p-2.5 border-2 border-ink rounded-xl bg-surface hover:bg-accent-lime text-ink transition-colors shadow-[2px_2px_0px_#161616]"
-                >
-                  <Edit3 className="w-4 h-4" />
-                </button>
+                {isAdmin && (
+                  <>
+                    <button
+                      type="button"
+                      title="Editar Informações do Artista"
+                      onClick={() => {
+                        setFormData({
+                          name: selectedRep.name,
+                          type: selectedRep.type,
+                          contactInfo: selectedRep.contactInfo || "",
+                        });
+                        setEditingRep(selectedRep);
+                      }}
+                      className="p-2.5 border-2 border-ink rounded-xl bg-surface hover:bg-accent-lime text-ink transition-colors shadow-[2px_2px_0px_#161616]"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
 
-                <button
-                  type="button"
-                  title="Excluir Artista"
-                  onClick={() => {
-                    setDeletingRep(selectedRep);
-                  }}
-                  className="p-2.5 border-2 border-ink rounded-xl bg-surface hover:bg-accent-cherry hover:text-surface text-ink transition-colors shadow-[2px_2px_0px_#161616]"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                    <button
+                      type="button"
+                      title="Excluir Artista"
+                      onClick={() => {
+                        setDeletingRep(selectedRep);
+                      }}
+                      className="p-2.5 border-2 border-ink rounded-xl bg-surface hover:bg-accent-cherry hover:text-surface text-ink transition-colors shadow-[2px_2px_0px_#161616]"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
 
                 <StickerPillButton
                   variant="lavender"
@@ -742,7 +849,8 @@ export default function RepresentativesPage() {
                               <MasteryRating
                                 level={song.masteryLevel}
                                 size="sm"
-                                onChange={(lvl) => handleMasteryChange(song.songId, lvl)}
+                                readOnly={!isAdmin}
+                                onChange={isAdmin ? (lvl) => handleMasteryChange(song.songId, lvl) : undefined}
                               />
                             </td>
                             <td className="py-3 px-4">
@@ -753,7 +861,13 @@ export default function RepresentativesPage() {
                                       key={idx}
                                       className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-ink text-[10px] font-bold uppercase bg-canvas font-[family-name:var(--font-dm-sans)] shadow-[1px_1px_0px_#161616]"
                                     >
-                                      <span>{inter.representativeName}</span>
+                                      {isAdmin ? (
+                                        <span>{inter.representativeName}</span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1">
+                                          <Lock className="w-2.5 h-2.5 text-ink" /> Outro Projeto
+                                        </span>
+                                      )}
                                       <span className="font-black text-accent-cherry">({inter.performanceKey})</span>
                                     </span>
                                   ))
@@ -763,15 +877,17 @@ export default function RepresentativesPage() {
                                   </span>
                                 )}
 
-                                <button
-                                  type="button"
-                                  onClick={() => setLinkingSong(song)}
-                                  title="Adicionar outro artista a esta música"
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-dashed border-ink bg-surface hover:bg-accent-lime text-[10px] font-black uppercase tracking-wider font-[family-name:var(--font-dm-sans)] transition-colors text-ink shadow-sm"
-                                >
-                                  <UserPlus className="w-3 h-3 text-ink" />
-                                  <span>+ Vincular</span>
-                                </button>
+                                {isAdmin && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setLinkingSong(song)}
+                                    title="Adicionar outro artista a esta música"
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-dashed border-ink bg-surface hover:bg-accent-lime text-[10px] font-black uppercase tracking-wider font-[family-name:var(--font-dm-sans)] transition-colors text-ink shadow-sm"
+                                  >
+                                    <UserPlus className="w-3 h-3 text-ink" />
+                                    <span>+ Vincular</span>
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -813,7 +929,8 @@ export default function RepresentativesPage() {
                           <MasteryRating
                             level={song.masteryLevel}
                             size="sm"
-                            onChange={(lvl) => handleMasteryChange(song.songId, lvl)}
+                            readOnly={!isAdmin}
+                            onChange={isAdmin ? (lvl) => handleMasteryChange(song.songId, lvl) : undefined}
                           />
                         </div>
 
@@ -826,7 +943,13 @@ export default function RepresentativesPage() {
                                   key={idx}
                                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-ink text-[10px] font-bold uppercase bg-surface font-[family-name:var(--font-dm-sans)] shadow-sm"
                                 >
-                                  <span>{inter.representativeName}</span>
+                                  {isAdmin ? (
+                                    <span>{inter.representativeName}</span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1">
+                                      <Lock className="w-2.5 h-2.5 text-ink" /> Outro Projeto
+                                    </span>
+                                  )}
                                   <span className="font-black text-accent-cherry">({inter.performanceKey})</span>
                                 </span>
                               ))
@@ -837,14 +960,16 @@ export default function RepresentativesPage() {
                             )}
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={() => setLinkingSong(song)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-dashed border-ink bg-surface hover:bg-accent-lime text-[10px] font-black uppercase font-[family-name:var(--font-dm-sans)] text-ink shrink-0"
-                          >
-                            <UserPlus className="w-3 h-3 text-ink" />
-                            <span>+ Vincular</span>
-                          </button>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => setLinkingSong(song)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-dashed border-ink bg-surface hover:bg-accent-lime text-[10px] font-black uppercase font-[family-name:var(--font-dm-sans)] text-ink shrink-0"
+                            >
+                              <UserPlus className="w-3 h-3 text-ink" />
+                              <span>+ Vincular</span>
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -861,7 +986,11 @@ export default function RepresentativesPage() {
         <PdfPreviewModal
           isOpen={isPreviewOpen}
           onClose={() => setIsPreviewOpen(false)}
-          title={`Repertório • ${selectedRep.name}`}
+          title={`Repertório • ${getMaskedArtistName(
+            selectedRep,
+            representatives.findIndex((r) => r.id === selectedRep.id),
+            isAdmin
+          )}`}
           subtitle={
             selectedGenres.length > 0
               ? `Filtro de Gêneros: ${selectedGenres.join(", ")} · ${filteredSongs.length} músicas`
@@ -870,7 +999,11 @@ export default function RepresentativesPage() {
           pdfBlobUrl={previewPdfUrl}
           isLoading={isGeneratingPdf}
           onDownload={handleDownloadPdf}
-          fileName={`repertorio_${selectedRep.name.replace(/\s+/g, "_")}${
+          fileName={`repertorio_${getMaskedArtistName(
+            selectedRep,
+            representatives.findIndex((r) => r.id === selectedRep.id),
+            isAdmin
+          ).replace(/[^a-zA-Z0-9_-]/g, "_")}${
             selectedGenres.length > 0
               ? `_${selectedGenres.map((g) => g.replace(/\s+/g, "_")).join("-")}`
               : ""

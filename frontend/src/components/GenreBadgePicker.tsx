@@ -98,15 +98,18 @@ export function GenreBadgePicker({
         type="button"
         disabled={disabled}
         onClick={(e) => {
+          if (disabled) return;
           e.stopPropagation();
           setCustomGenre("");
           setIsOpen(!isOpen);
         }}
-        title="Clique para alterar o gênero"
-        className={`group/gb inline-flex items-center gap-1.5 border-2 border-ink rounded-full font-bold uppercase tracking-wider font-[family-name:var(--font-dm-sans)] whitespace-nowrap transition-all select-none shadow-[1px_1px_0px_#161616] hover:shadow-[2px_2px_0px_#161616] hover:-translate-y-0.5 ${
-          isOpen
-            ? "bg-accent-lime text-ink ring-2 ring-ink"
-            : "bg-muted text-ink hover:bg-accent-lime"
+        title={disabled ? undefined : "Clique para alterar o gênero"}
+        className={`group/gb inline-flex items-center gap-1.5 border-2 border-ink rounded-full font-bold uppercase tracking-wider font-[family-name:var(--font-dm-sans)] whitespace-nowrap transition-all select-none shadow-[1px_1px_0px_#161616] ${
+          disabled
+            ? "bg-muted text-ink cursor-default"
+            : isOpen
+            ? "bg-accent-lime text-ink ring-2 ring-ink shadow-[2px_2px_0px_#161616]"
+            : "bg-muted text-ink hover:bg-accent-lime hover:shadow-[2px_2px_0px_#161616] hover:-translate-y-0.5"
         } ${
           size === "sm"
             ? "px-2 py-0.5 text-[10px]"
@@ -116,7 +119,9 @@ export function GenreBadgePicker({
         <span className="truncate max-w-[120px] sm:max-w-[150px]">
           {displayGenre}
         </span>
-        <Edit3 className="w-2.5 h-2.5 opacity-40 group-hover/gb:opacity-100 group-hover/gb:text-ink transition-opacity shrink-0" />
+        {!disabled && (
+          <Edit3 className="w-2.5 h-2.5 opacity-40 group-hover/gb:opacity-100 group-hover/gb:text-ink transition-opacity shrink-0" />
+        )}
       </button>
 
       {/* Popover Menu */}

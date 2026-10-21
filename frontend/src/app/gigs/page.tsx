@@ -7,12 +7,15 @@ import { Calendar, MapPin, Mic2, FileDown, Send, Plus } from "lucide-react";
 import Link from "next/link";
 import { useAppStore, Gig } from "@/lib/store";
 import { getApiBaseUrl } from "@/lib/utils";
+import { getMaskedBadgeName } from "@/lib/artistPrivacy";
 
 const API_URL = getApiBaseUrl();
 
 export default function GigsPage() {
   const gigs = useAppStore((state) => state.gigs);
   const fetchGigs = useAppStore((state) => state.fetchGigs);
+  const currentUser = useAppStore((state) => state.currentUser);
+  const isAdmin = currentUser?.role === "ADMIN";
   const [sendingId, setSendingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -20,9 +23,14 @@ export default function GigsPage() {
   }, [fetchGigs]);
 
   const sendWhatsApp = async (id: string) => {
+    if (!isAdmin) return;
     setSendingId(id);
     try {
-      const res = await fetch(`${API_URL}/api/gigs/${id}/send-whatsapp`, { method: "POST" });
+      const token = useAppStore.getState().currentUser?.token;
+      const res = await fetch(`${API_URL}/api/gigs/${id}/send-whatsapp`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (res.ok) alert("✅ Escala enviada no WhatsApp!");
       else alert("❌ Erro ao enviar. Verifique a Evolution API.");
     } catch {
@@ -56,17 +64,21 @@ export default function GigsPage() {
           </h1>
           <p className="text-dim font-medium mt-2">Setlists agendados. Exporte em PDF ou envie a escala direto no WhatsApp.</p>
         </div>
-        <StickerPillButton onClick={() => window.location.href = "/gigs/new"}>
-          <Plus className="w-4 h-4 mr-1 inline" /> Novo Show
-        </StickerPillButton>
+        {isAdmin && (
+          <StickerPillButton onClick={() => window.location.href = "/gigs/new"}>
+            <Plus className="w-4 h-4 mr-1 inline" /> Novo Show
+          </StickerPillButton>
+        )}
       </div>
 
       {gigs.length === 0 ? (
         <div className="bg-surface border-2 border-dashed border-ink/20 rounded-3xl p-16 text-center">
           <p className="text-dim text-lg font-medium mb-6">Nenhum show cadastrado ainda.</p>
-          <Link href="/gigs/new">
-            <StickerPillButton>Criar Primeiro Show</StickerPillButton>
-          </Link>
+          {isAdmin && (
+            <Link href="/gigs/new">
+              <StickerPillButton>Criar Primeiro Show</StickerPillButton>
+            </Link>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -85,7 +97,7 @@ export default function GigsPage() {
                   </h3>
                   {gig.representativeName && (
                     <p className="text-accent-lime text-sm font-bold mt-0.5 flex items-center gap-1">
-                      <Mic2 className="w-3 h-3" /> {gig.representativeName}
+                      <Mic2 className="w-3 h-3" /> {getMaskedBadgeName(gig.representativeName, undefined, undefined, isAdmin)}
                     </p>
                   )}
                 </div>
@@ -130,14 +142,16 @@ export default function GigsPage() {
                 >
                   <FileDown className="w-4 h-4" /> PDF
                 </button>
-                <button
-                  onClick={() => sendWhatsApp(gig.id)}
-                  disabled={sendingId === gig.id}
-                  className="flex-1 flex items-center justify-center gap-2 bg-accent-lime border-2 border-ink py-3 rounded-xl font-bold text-sm hover:-translate-y-0.5 transition-transform shadow-[3px_3px_0px_#161616] hover:shadow-[0px_0px_0px_#161616] disabled:opacity-60 font-[family-name:var(--font-dm-sans)]"
-                >
-                  <Send className="w-4 h-4" />
-                  {sendingId === gig.id ? "Enviando..." : "WhatsApp"}
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => sendWhatsApp(gig.id)}
+                    disabled={sendingId === gig.id}
+                    className="flex-1 flex items-center justify-center gap-2 bg-accent-lime border-2 border-ink py-3 rounded-xl font-bold text-sm hover:-translate-y-0.5 transition-transform shadow-[3px_3px_0px_#161616] hover:shadow-[0px_0px_0px_#161616] disabled:opacity-60 font-[family-name:var(--font-dm-sans)]"
+                  >
+                    <Send className="w-4 h-4" />
+                    {sendingId === gig.id ? "Enviando..." : "WhatsApp"}
+                  </button>
+                )}
               </div>
             </motion.div>
           ))}

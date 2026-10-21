@@ -35,7 +35,8 @@ import {
   List,
   ArrowUp,
   ArrowDown,
-  ArrowUpDown
+  ArrowUpDown,
+  Lock,
 } from "lucide-react";
 import { MasteryRating } from "@/components/MasteryRating";
 import { StickerPillButton } from "@/components/StickerPillButton";
@@ -44,6 +45,7 @@ import { SongFormModal, SongData } from "@/components/SongFormModal";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { SongDetailModal } from "@/components/SongDetailModal";
 import { DailyPracticeModal } from "@/components/DailyPracticeModal";
+import { getMaskedBadgeName } from "@/lib/artistPrivacy";
 import { useAppStore, Song } from "@/lib/store";
 import { getApiBaseUrl } from "@/lib/utils";
 
@@ -54,12 +56,16 @@ export default function SongsPage() {
     songs,
     isLoadingSongs,
     fetchSongs,
+    representatives,
     addSong,
     updateSong,
     deleteSong,
     updateMastery,
     updateGenre,
+    currentUser,
   } = useAppStore();
+
+  const isAdmin = currentUser?.role === "ADMIN";
 
   const [sorting, setSorting] = useState<SortingState>([{ id: "title", desc: false }]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -151,8 +157,17 @@ export default function SongsPage() {
                 </span>
                 {links.length > 0 && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent-lavender/60 border border-ink/30 rounded-md text-[10px] font-black uppercase font-[family-name:var(--font-dm-sans)] text-ink">
-                    <Users className="w-2.5 h-2.5" />
-                    {links.length === 1 ? links[0].representativeName : `${links.length} artistas`}
+                    {isAdmin ? (
+                      <>
+                        <Users className="w-2.5 h-2.5" />
+                        <span>{links.length === 1 ? links[0].representativeName : `${links.length} artistas`}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-2.5 h-2.5 text-ink" />
+                        <span>Projeto Reservado</span>
+                      </>
+                    )}
                   </span>
                 )}
               </div>
@@ -178,6 +193,7 @@ export default function SongsPage() {
         cell: (info) => (
           <GenreBadgePicker
             genre={info.getValue()}
+            disabled={!isAdmin}
             onUpdate={(newGenre) => updateGenre(info.row.original.id, newGenre)}
           />
         ),
@@ -199,7 +215,8 @@ export default function SongsPage() {
           <div className="flex items-center gap-2">
             <MasteryRating
               level={info.getValue() || 0}
-              onChange={(level) => handleUpdateMastery(info.row.original.id, level)}
+              readOnly={!isAdmin}
+              onChange={isAdmin ? (level) => handleUpdateMastery(info.row.original.id, level) : undefined}
             />
           </div>
         ),
@@ -221,31 +238,35 @@ export default function SongsPage() {
                 <span className="sr-only">Visualizar</span>
               </button>
 
-              <button
-                type="button"
-                title="Revisar e editar música"
-                onClick={() => setEditingSong(song)}
-                className="flex items-center gap-1 px-2.5 py-1.5 border-2 border-ink rounded-xl bg-surface hover:bg-accent-lime text-ink text-xs font-bold uppercase tracking-wider transition-all shadow-[2px_2px_0px_#161616] hover:shadow-none hover:translate-y-0.5 font-[family-name:var(--font-dm-sans)]"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>Revisar</span>
-              </button>
+              {isAdmin && (
+                <>
+                  <button
+                    type="button"
+                    title="Revisar e editar música"
+                    onClick={() => setEditingSong(song)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 border-2 border-ink rounded-xl bg-surface hover:bg-accent-lime text-ink text-xs font-bold uppercase tracking-wider transition-all shadow-[2px_2px_0px_#161616] hover:shadow-none hover:translate-y-0.5 font-[family-name:var(--font-dm-sans)]"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Revisar</span>
+                  </button>
 
-              <button
-                type="button"
-                title="Excluir música"
-                onClick={() => setDeletingSong(song)}
-                className="p-2 border-2 border-ink rounded-xl bg-surface hover:bg-accent-cherry hover:text-surface text-ink transition-colors shadow-[2px_2px_0px_#161616] hover:shadow-none hover:translate-y-0.5"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span className="sr-only">Excluir</span>
-              </button>
+                  <button
+                    type="button"
+                    title="Excluir música"
+                    onClick={() => setDeletingSong(song)}
+                    className="p-2 border-2 border-ink rounded-xl bg-surface hover:bg-accent-cherry hover:text-surface text-ink transition-colors shadow-[2px_2px_0px_#161616] hover:shadow-none hover:translate-y-0.5"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span className="sr-only">Excluir</span>
+                  </button>
+                </>
+              )}
             </div>
           );
         },
       }),
     ],
-    []
+    [isAdmin]
   );
 
   const filteredData = useMemo(() => {
@@ -353,14 +374,16 @@ export default function SongsPage() {
             Exportar PDF
           </StickerPillButton>
 
-          <StickerPillButton
-            variant="lime"
-            onClick={() => setIsCreateOpen(true)}
-            className="w-full sm:w-auto justify-center"
-            icon={<Plus className="w-4 h-4 text-surface" />}
-          >
-            Nova Música
-          </StickerPillButton>
+          {isAdmin && (
+            <StickerPillButton
+              variant="lime"
+              onClick={() => setIsCreateOpen(true)}
+              className="w-full sm:w-auto justify-center"
+              icon={<Plus className="w-4 h-4 text-surface" />}
+            >
+              Nova Música
+            </StickerPillButton>
+          )}
         </div>
       </div>
 
@@ -538,6 +561,7 @@ export default function SongsPage() {
                     <GenreBadgePicker
                       genre={song.genre}
                       size="sm"
+                      disabled={!isAdmin}
                       onUpdate={(newGenre) => updateGenre(song.id, newGenre)}
                     />
 
@@ -546,8 +570,8 @@ export default function SongsPage() {
                         key={idx}
                         className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent-lime/30 border border-ink/40 rounded-full text-[10px] font-bold uppercase font-[family-name:var(--font-dm-sans)] text-ink"
                       >
-                        <Users className="w-2.5 h-2.5" />
-                        <span>{l.representativeName}</span>
+                        {isAdmin ? <Users className="w-2.5 h-2.5" /> : <Lock className="w-2.5 h-2.5" />}
+                        <span>{isAdmin ? l.representativeName : "Projeto Reservado"}</span>
                         <span className="font-black text-accent-cherry">({l.performanceKey})</span>
                       </span>
                     ))}
@@ -565,7 +589,8 @@ export default function SongsPage() {
                     <MasteryRating
                       level={song.masteryLevel || 0}
                       size="sm"
-                      onChange={(lvl) => handleUpdateMastery(song.id, lvl)}
+                      readOnly={!isAdmin}
+                      onChange={isAdmin ? (lvl) => handleUpdateMastery(song.id, lvl) : undefined}
                     />
 
                     <div className="flex items-center gap-1.5">
@@ -578,23 +603,27 @@ export default function SongsPage() {
                         <Eye className="w-3.5 h-3.5" />
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setEditingSong(song)}
-                        title="Editar música"
-                        className="p-1.5 border border-ink rounded-lg bg-surface hover:bg-accent-lime text-ink shadow-[1px_1px_0px_#161616]"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
+                      {isAdmin && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setEditingSong(song)}
+                            title="Editar música"
+                            className="p-1.5 border border-ink rounded-lg bg-surface hover:bg-accent-lime text-ink shadow-[1px_1px_0px_#161616]"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setDeletingSong(song)}
-                        title="Excluir música"
-                        className="p-1.5 border border-ink rounded-lg bg-surface hover:bg-accent-cherry hover:text-surface text-ink shadow-[1px_1px_0px_#161616]"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeletingSong(song)}
+                            title="Excluir música"
+                            className="p-1.5 border border-ink rounded-lg bg-surface hover:bg-accent-cherry hover:text-surface text-ink shadow-[1px_1px_0px_#161616]"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

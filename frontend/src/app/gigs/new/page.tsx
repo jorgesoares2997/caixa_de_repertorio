@@ -23,11 +23,18 @@ type Block = {
 
 export default function GigConstructor() {
   const router = useRouter();
+  const currentUser = useAppStore((state) => state.currentUser);
   const availableSongs = useAppStore((state) => state.songs);
   const representatives = useAppStore((state) => state.representatives);
   const fetchSongs = useAppStore((state) => state.fetchSongs);
   const fetchRepresentatives = useAppStore((state) => state.fetchRepresentatives);
   const invalidateCache = useAppStore((state) => state.invalidateCache);
+
+  useEffect(() => {
+    if (currentUser && currentUser.role !== "ADMIN") {
+      router.replace("/gigs");
+    }
+  }, [currentUser, router]);
 
   const [search, setSearch] = useState("");
   const [gigTitle, setGigTitle] = useState("");
@@ -45,9 +52,15 @@ export default function GigConstructor() {
   ]);
 
   useEffect(() => {
-    fetchSongs();
-    fetchRepresentatives();
-  }, [fetchSongs, fetchRepresentatives]);
+    if (currentUser?.role === "ADMIN") {
+      fetchSongs();
+      fetchRepresentatives();
+    }
+  }, [currentUser, fetchSongs, fetchRepresentatives]);
+
+  if (!currentUser || currentUser.role !== "ADMIN") {
+    return null;
+  }
 
   const filteredSongs = availableSongs.filter(
     (s) =>
@@ -104,9 +117,13 @@ export default function GigConstructor() {
         items,
       };
 
+      const token = useAppStore.getState().currentUser?.token;
       const res = await fetch(`${API_URL}/api/gigs`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(body),
       });
 
@@ -127,7 +144,11 @@ export default function GigConstructor() {
     if (!savedGigId) { alert("Salve o show antes de enviar."); return; }
     setIsSendingWA(true);
     try {
-      const res = await fetch(`${API_URL}/api/gigs/${savedGigId}/send-whatsapp`, { method: "POST" });
+      const token = useAppStore.getState().currentUser?.token;
+      const res = await fetch(`${API_URL}/api/gigs/${savedGigId}/send-whatsapp`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (res.ok) alert("✅ Escala enviada no WhatsApp!");
       else alert("❌ Erro ao enviar. Verifique a Evolution API.");
     } catch {

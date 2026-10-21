@@ -4,6 +4,15 @@ import { getApiBaseUrl } from "./utils";
 
 const API_URL = getApiBaseUrl();
 
+export type UserRole = "ADMIN" | "VISITOR" | null;
+
+export type AuthUser = {
+  username: string;
+  name: string;
+  role: UserRole;
+  token?: string;
+};
+
 export type RepresentativeLink = {
   representativeId: string;
   representativeName?: string;
@@ -72,6 +81,13 @@ export type Stats = {
 };
 
 interface AppState {
+  // Auth state
+  currentUser: AuthUser | null;
+  login: (username: string, password: string) => Promise<AuthUser>;
+  loginAsVisitor: () => void;
+  logout: () => void;
+  isAdmin: () => boolean;
+
   // Hydration state
   hasHydrated: boolean;
   setHasHydrated: (state: boolean) => void;
@@ -124,9 +140,48 @@ interface AppState {
 // 1 hour cache TTL: avoids repeated database hits while keeping data fresh
 const CACHE_TTL = 60 * 60 * 1000;
 
+const getAuthHeaders = (token?: string) => ({
+  "Content-Type": "application/json",
+  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+});
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
+      currentUser: null,
+
+      login: async (username: string, password: string) => {
+        const res = await fetch(`${API_URL}/api/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => null);
+          throw new Error(errData?.message || "Usuário ou senha incorretos.");
+        }
+        const data: AuthUser = await res.json();
+        set({ currentUser: data });
+        return data;
+      },
+
+      loginAsVisitor: () => {
+        const visitor: AuthUser = {
+          username: "visitante",
+          name: "Visitante",
+          role: "VISITOR",
+        };
+        set({ currentUser: visitor });
+      },
+
+      logout: () => {
+        set({ currentUser: null });
+      },
+
+      isAdmin: () => {
+        return get().currentUser?.role === "ADMIN";
+      },
+
       hasHydrated: false,
       setHasHydrated: (state: boolean) => set({ hasHydrated: state }),
 
@@ -179,9 +234,10 @@ export const useAppStore = create<AppState>()(
       },
 
       addSong: async (songData) => {
+        const token = get().currentUser?.token;
         const res = await fetch(`${API_URL}/api/songs`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: getAuthHeaders(token),
           body: JSON.stringify(songData),
         });
 
@@ -212,9 +268,10 @@ export const useAppStore = create<AppState>()(
       },
 
       updateSong: async (id, songData) => {
+        const token = get().currentUser?.token;
         const res = await fetch(`${API_URL}/api/songs/${id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: getAuthHeaders(token),
           body: JSON.stringify(songData),
         });
 
@@ -234,12 +291,17 @@ export const useAppStore = create<AppState>()(
       },
 
       deleteSong: async (id) => {
+        const token = get().currentUser?.token;
         const target = get().songs.find((s) => s.id === id);
         const res = await fetch(`${API_URL}/api/songs/${id}`, {
           method: "DELETE",
+          headers: getAuthHeaders(token),
         });
 
-        if (!res.ok) throw new Error("Falha ao excluir música do servidor.");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => null);
+          throw new Error(errData?.message || "Falha ao excluir música do servidor.");
+        }
 
         set((state) => ({
           songs: state.songs.filter((s) => s.id !== id),
@@ -287,9 +349,10 @@ export const useAppStore = create<AppState>()(
         }));
 
         try {
+          const token = get().currentUser?.token;
           await fetch(`${API_URL}/api/songs/${id}/mastery`, {
             method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            headers: getAuthHeaders(token),
             body: JSON.stringify({ level }),
           });
         } catch (err) {
@@ -311,9 +374,10 @@ export const useAppStore = create<AppState>()(
         }));
 
         try {
+          const token = get().currentUser?.token;
           const res = await fetch(`${API_URL}/api/songs/${id}/genre`, {
             method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            headers: getAuthHeaders(token),
             body: JSON.stringify({ genre: cleanGenre }),
           });
           if (!res.ok) {
@@ -388,9 +452,10 @@ export const useAppStore = create<AppState>()(
       },
 
       addRepresentative: async (repData) => {
+        const token = get().currentUser?.token;
         const res = await fetch(`${API_URL}/api/representatives`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: getAuthHeaders(token),
           body: JSON.stringify(repData),
         });
         if (!res.ok) {
@@ -406,9 +471,10 @@ export const useAppStore = create<AppState>()(
       },
 
       updateRepresentative: async (id, repData) => {
+        const token = get().currentUser?.token;
         const res = await fetch(`${API_URL}/api/representatives/${id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: getAuthHeaders(token),
           body: JSON.stringify(repData),
         });
         if (!res.ok) {
@@ -424,8 +490,10 @@ export const useAppStore = create<AppState>()(
       },
 
       deleteRepresentative: async (id) => {
+        const token = get().currentUser?.token;
         const res = await fetch(`${API_URL}/api/representatives/${id}`, {
           method: "DELETE",
+          headers: getAuthHeaders(token),
         });
         if (!res.ok) {
           const errData = await res.json().catch(() => null);
@@ -549,6 +617,7 @@ export const useAppStore = create<AppState>()(
         state?.setHasHydrated(true);
       },
       partialize: (state) => ({
+        currentUser: state.currentUser,
         songs: state.songs,
         representatives: state.representatives,
         representativeSongsCache: state.representativeSongsCache,

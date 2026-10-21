@@ -1,11 +1,12 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Music, UserCheck, Clock, FileText, Edit3, Trash2, Tag, KeyRound, ExternalLink, Users } from "lucide-react";
+import { X, Music, UserCheck, Clock, FileText, Edit3, Trash2, Tag, KeyRound, ExternalLink, Users, Lock } from "lucide-react";
 import { MasteryRating } from "./MasteryRating";
 import { SongData } from "./SongFormModal";
-import { RepresentativeLink } from "@/lib/store";
+import { RepresentativeLink, useAppStore } from "@/lib/store";
 import { GenreBadgePicker } from "./GenreBadgePicker";
+import { getMaskedBadgeName } from "@/lib/artistPrivacy";
 
 interface SongDetailModalProps {
   isOpen: boolean;
@@ -24,6 +25,9 @@ export function SongDetailModal({
   onDelete,
   onUpdateGenre,
 }: SongDetailModalProps) {
+  const currentUser = useAppStore((state) => state.currentUser);
+  const isAdmin = currentUser?.role === "ADMIN";
+
   if (!isOpen || !song) return null;
 
   const repLinks = song.representativeLinks || [];
@@ -52,7 +56,7 @@ export function SongDetailModal({
           <div className="px-6 py-5 bg-canvas border-b-2 border-ink flex items-start justify-between">
             <div className="flex-1 pr-4">
               <div className="mb-2">
-                {onUpdateGenre ? (
+                {onUpdateGenre && isAdmin ? (
                   <GenreBadgePicker
                     genre={song.genre}
                     onUpdate={onUpdateGenre}
@@ -127,12 +131,12 @@ export function SongDetailModal({
                     >
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-md bg-accent-lavender border border-ink flex items-center justify-center font-bold text-xs">
-                          {link.representativeName?.charAt(0) || "A"}
+                          {isAdmin ? (link.representativeName?.charAt(0) || "A") : <Lock className="w-3 h-3 text-ink" />}
                         </div>
                         <span className="font-black text-sm uppercase text-ink font-[family-name:var(--font-oswald)]">
-                          {link.representativeName || "Artista"}
+                          {isAdmin ? (link.representativeName || "Artista") : "Projeto Confidencial"}
                         </span>
-                        {link.specificNotes && (
+                        {isAdmin && link.specificNotes && (
                           <span className="text-[11px] text-dim font-medium ml-1">
                             ({link.specificNotes})
                           </span>
@@ -170,16 +174,18 @@ export function SongDetailModal({
 
           {/* Footer Actions */}
           <div className="px-6 py-4 bg-canvas border-t-2 border-ink flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onDelete(song);
-              }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-accent-cherry text-accent-cherry bg-surface font-bold text-xs uppercase tracking-wider hover:bg-accent-cherry hover:text-surface transition-colors shadow-[2px_2px_0px_#161616] font-[family-name:var(--font-dm-sans)]"
-            >
-              <Trash2 className="w-3.5 h-3.5" /> Excluir
-            </button>
+            {isAdmin ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onDelete(song);
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-accent-cherry text-accent-cherry bg-surface font-bold text-xs uppercase tracking-wider hover:bg-accent-cherry hover:text-surface transition-colors shadow-[2px_2px_0px_#161616] font-[family-name:var(--font-dm-sans)]"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Excluir
+              </button>
+            ) : <div />}
 
             <div className="flex items-center gap-3">
               <button
@@ -190,16 +196,18 @@ export function SongDetailModal({
                 Fechar
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onEdit(song);
-                }}
-                className="inline-flex items-center gap-2 px-5 py-2 rounded-xl border-2 border-ink bg-accent-lime text-ink font-bold text-xs uppercase tracking-wider hover:translate-y-[-1px] transition-all shadow-[2px_2px_0px_#161616] font-[family-name:var(--font-dm-sans)]"
-              >
-                <Edit3 className="w-4 h-4" /> Editar / Revisar
-              </button>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onEdit(song);
+                  }}
+                  className="inline-flex items-center gap-2 px-5 py-2 rounded-xl border-2 border-ink bg-accent-lime text-ink font-bold text-xs uppercase tracking-wider hover:translate-y-[-1px] transition-all shadow-[2px_2px_0px_#161616] font-[family-name:var(--font-dm-sans)]"
+                >
+                  <Edit3 className="w-4 h-4" /> Editar / Revisar
+                </button>
+              )}
             </div>
           </div>
         </motion.div>

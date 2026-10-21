@@ -2,16 +2,31 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { StickerPillButton } from "./StickerPillButton";
-import { Plus, Home, Music2, Users, Calendar, Sparkles } from "lucide-react";
+import { Plus, Home, Music2, Users, Calendar, Sparkles, LogOut, Shield, Eye, LogIn } from "lucide-react";
 import { ReactNode } from "react";
+import { useAppStore } from "@/lib/store";
 
 export function FloatingNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const currentUser = useAppStore((state) => state.currentUser);
+  const logout = useAppStore((state) => state.logout);
+
+  // Do not render nav on login page
+  if (pathname === "/login") return null;
+
+  const isAdmin = currentUser?.role === "ADMIN";
+  const isVisitor = currentUser?.role === "VISITOR";
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
 
   return (
-    <div className="fixed bottom-3 md:bottom-auto md:top-5 left-0 right-0 z-50 flex justify-center px-3 sm:px-4 pointer-events-none">
+    <div className={`fixed bottom-3 md:bottom-auto ${isVisitor ? "md:top-14" : "md:top-5"} left-0 right-0 z-50 flex justify-center px-3 sm:px-4 pointer-events-none transition-all`}>
       <div className="pointer-events-auto flex items-center justify-between gap-1 sm:gap-3 md:gap-4 bg-surface border-2 border-ink rounded-2xl p-1.5 md:p-2 shadow-[4px_4px_0px_#161616] max-w-5xl w-full">
         
         {/* Brand Logo & Name */}
@@ -67,25 +82,62 @@ export function FloatingNav() {
           />
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <Link
-            href="/gigs/new"
-            title="Criar Novo Show"
-            className="md:hidden p-2 rounded-xl border-2 border-ink bg-accent-lime text-ink shadow-[2px_2px_0px_#161616] hover:bg-accent-lime/80 active:translate-y-0.5 transition-all flex items-center justify-center"
-          >
-            <Plus className="w-4 h-4 text-ink font-black" />
-          </Link>
-
-          <div className="hidden md:block">
-            <StickerPillButton 
-              variant="lime"
-              onClick={() => window.location.href = '/gigs/new'}
-              icon={<Plus className="w-3.5 h-3.5 text-surface" />}
+        {/* Actions & Role Indicator */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {!currentUser ? (
+            <Link
+              href="/login"
+              title="Acessar o sistema ou entrar como visitante"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-ink bg-accent-lime hover:bg-accent-lime/80 text-ink transition-all shadow-[2px_2px_0px_#161616] text-xs font-black uppercase font-[family-name:var(--font-dm-sans)]"
             >
-              Novo Show
-            </StickerPillButton>
-          </div>
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Entrar</span>
+            </Link>
+          ) : isAdmin ? (
+            <>
+              {/* Novo Show (Admin only) */}
+              <Link
+                href="/gigs/new"
+                title="Criar Novo Show"
+                className="md:hidden p-2 rounded-xl border-2 border-ink bg-accent-lime text-ink shadow-[2px_2px_0px_#161616] hover:bg-accent-lime/80 active:translate-y-0.5 transition-all flex items-center justify-center"
+              >
+                <Plus className="w-4 h-4 text-ink font-black" />
+              </Link>
+
+              <div className="hidden md:block">
+                <StickerPillButton 
+                  variant="lime"
+                  onClick={() => router.push('/gigs/new')}
+                  icon={<Plus className="w-3.5 h-3.5 text-surface" />}
+                >
+                  Novo Show
+                </StickerPillButton>
+              </div>
+
+              {/* Admin Logout Button */}
+              <button
+                type="button"
+                onClick={handleLogout}
+                title="Sair do modo Admin (Fazer Logout)"
+                className="p-2 sm:px-2.5 sm:py-2 rounded-xl border-2 border-ink bg-surface hover:bg-accent-cherry hover:text-surface text-ink transition-all shadow-[2px_2px_0px_#161616] flex items-center gap-1.5 text-xs font-bold font-[family-name:var(--font-dm-sans)]"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline text-[11px] uppercase">Sair</span>
+              </button>
+            </>
+          ) : (
+            /* Visitor Pill with Switch to Admin */
+            <button
+              type="button"
+              onClick={handleLogout}
+              title="Você está navegando como visitante. Clique para entrar como administrador."
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border-2 border-ink bg-accent-lavender hover:bg-accent-lime text-ink transition-all shadow-[2px_2px_0px_#161616] text-xs font-black uppercase font-[family-name:var(--font-dm-sans)]"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Visitante</span>
+              <span className="text-[10px] text-dim font-bold hidden md:inline">• Entrar</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

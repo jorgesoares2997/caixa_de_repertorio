@@ -13,6 +13,8 @@ export default function Dashboard() {
   const fetchSongs = useAppStore((state) => state.fetchSongs);
   const fetchRepresentatives = useAppStore((state) => state.fetchRepresentatives);
   const representatives = useAppStore((state) => state.representatives);
+  const currentUser = useAppStore((state) => state.currentUser);
+  const isAdmin = currentUser?.role === "ADMIN";
 
   const [isPracticeOpen, setIsPracticeOpen] = useState(false);
 
@@ -113,7 +115,7 @@ export default function Dashboard() {
               className="w-full md:w-auto justify-center"
               icon={<Mail className="w-4 h-4 text-surface" />}
             >
-              Ver Sessão & Disparar
+              {isAdmin ? "Ver Sessão & Disparar" : "Ver Sugestões de Estudo"}
             </StickerPillButton>
           </div>
         </div>
@@ -154,9 +156,15 @@ export default function Dashboard() {
               </div>
               <div className="font-bold text-accent-orange bg-accent-orange/10 border border-accent-orange/20 px-3 py-1.5 rounded-lg text-lg font-[family-name:var(--font-oswald)]">G</div>
             </div>
-            <StickerPillButton onClick={() => window.location.href = "/gigs/new"}>
-              <Calendar className="w-4 h-4 mr-1 inline" /> Criar Novo Show
-            </StickerPillButton>
+            {isAdmin ? (
+              <StickerPillButton onClick={() => window.location.href = "/gigs/new"}>
+                <Calendar className="w-4 h-4 mr-1 inline" /> Criar Novo Show
+              </StickerPillButton>
+            ) : (
+              <StickerPillButton onClick={() => window.location.href = "/gigs"}>
+                <Calendar className="w-4 h-4 mr-1 inline" /> Ver Shows & Gigs
+              </StickerPillButton>
+            )}
           </div>
         </div>
       </section>
