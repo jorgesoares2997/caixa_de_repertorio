@@ -23,6 +23,7 @@ export function getMaskedArtistName(
   isAdmin: boolean = false
 ): string {
   if (!rep) return "Projeto Confidencial";
+  if (rep.name && rep.name.toLowerCase() === "geral") return "Geral (Compilado do Acervo)";
   if (isAdmin) return rep.name;
 
   const typeLabel = rep.type ? (REP_TYPE_LABELS[rep.type] || "Projeto") : "Projeto Especial";
@@ -38,6 +39,7 @@ export function getMaskedBadgeName(
   allReps?: { id: string; name: string }[],
   isAdmin: boolean = false
 ): string {
+  if (repName && repName.toLowerCase() === "geral") return "Geral";
   if (isAdmin) return repName || "Artista";
   return "Projeto Confidencial";
 }
@@ -49,6 +51,7 @@ export function getMaskedContactInfo(
   contactInfo: string | null | undefined,
   isAdmin: boolean = false
 ): string {
+  if (contactInfo && contactInfo.toLowerCase().includes("geral")) return contactInfo;
   if (isAdmin) return contactInfo || "";
   return "Dados bloqueados para proteger o nome dos artistas parceiros";
 }

@@ -23,6 +23,7 @@ import {
   UserPlus,
   ChevronDown,
   Lock,
+  RefreshCw,
 } from "lucide-react";
 import { getMaskedArtistName, getMaskedBadgeName, getMaskedContactInfo } from "@/lib/artistPrivacy";
 import { StickerPillButton } from "@/components/StickerPillButton";
@@ -53,6 +54,8 @@ export default function RepresentativesPage() {
   const updateMastery = useAppStore((state) => state.updateMastery);
   const currentUser = useAppStore((state) => state.currentUser);
   const isAdmin = currentUser?.role === "ADMIN";
+  const catalogSongs = useAppStore((state) => state.songs);
+  const fetchSongs = useAppStore((state) => state.fetchSongs);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
@@ -91,7 +94,10 @@ export default function RepresentativesPage() {
 
   useEffect(() => {
     fetchRepresentatives();
-  }, [fetchRepresentatives]);
+    if (catalogSongs.length === 0) {
+      fetchSongs();
+    }
+  }, [fetchRepresentatives, fetchSongs, catalogSongs.length]);
 
   // Click outside listener for genre select dropdown
   useEffect(() => {
@@ -108,21 +114,23 @@ export default function RepresentativesPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isGenreDropdownOpen]);
 
-  const openModal = async (rep: Representative) => {
+  const openModal = async (rep: Representative, force = false) => {
     setSelectedRep(rep);
     setSongSearch("");
     setSelectedGenres([]);
     setIsGenreDropdownOpen(false);
+
+    // CACHE-FIRST: if already present in localStorage cache, display immediately without network
     const cached = representativeSongsCache[rep.id];
-    if (cached && cached.length > 0) {
+    if (!force && cached !== undefined) {
       setSongs(cached);
       setIsLoadingSongs(false);
-    } else {
-      setIsLoadingSongs(true);
+      return;
     }
 
+    setIsLoadingSongs(true);
     try {
-      const data = await fetchRepresentativeSongs(rep.id);
+      const data = await fetchRepresentativeSongs(rep.id, force);
       setSongs(data);
     } catch (err) {
       console.error(err);
@@ -278,12 +286,20 @@ export default function RepresentativesPage() {
   };
 
   const filteredRepresentatives = useMemo(() => {
-    return representatives.filter((rep) => {
+    const list = representatives.filter((rep) => {
       const matchName =
         rep.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         rep.contactInfo?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchType = !typeFilter || rep.type === typeFilter;
       return matchName && matchType;
+    });
+
+    return [...list].sort((a, b) => {
+      const aGeral = a.name.toLowerCase() === "geral";
+      const bGeral = b.name.toLowerCase() === "geral";
+      if (aGeral && !bGeral) return -1;
+      if (!aGeral && bGeral) return 1;
+      return 0;
     });
   }, [representatives, searchQuery, typeFilter]);
 
@@ -332,18 +348,29 @@ export default function RepresentativesPage() {
           </p>
         </div>
 
-        {isAdmin && (
-          <StickerPillButton
-            variant="lime"
-            onClick={() => {
-              setFormData({ name: "", type: "SINGER", contactInfo: "" });
-              setIsCreateOpen(true);
-            }}
-            icon={<Plus className="w-4 h-4 text-surface" />}
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => fetchRepresentatives(true)}
+            title="Atualizar lista de artistas do servidor"
+            className="flex items-center gap-1.5 px-3.5 py-2.5 bg-muted text-ink font-black uppercase tracking-wider text-xs rounded-xl border-2 border-ink shadow-[2.5px_2.5px_0px_#161616] hover:bg-surface hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0px_#161616] transition-all font-[family-name:var(--font-dm-sans)]"
           >
-            Novo Artista / Projeto
-          </StickerPillButton>
-        )}
+            <RefreshCw className="w-4 h-4 text-ink" />
+            <span className="hidden sm:inline">Atualizar</span>
+          </button>
+
+          {isAdmin && (
+            <StickerPillButton
+              variant="lime"
+              onClick={() => {
+                setFormData({ name: "", type: "SINGER", contactInfo: "" });
+                setIsCreateOpen(true);
+              }}
+              icon={<Plus className="w-4 h-4 text-surface" />}
+            >
+              Novo Artista / Projeto
+            </StickerPillButton>
+          )}
+        </div>
       </div>
 
       {/* Visitor Privacy Notice */}
@@ -404,20 +431,28 @@ export default function RepresentativesPage() {
       {/* Grid of Artists */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredRepresentatives.map((rep, idx) => {
-          const rotation = idx % 3 === 0 ? "rotate-1" : idx % 3 === 1 ? "-rotate-1" : "rotate-0";
-          const typeLabel = REP_TYPE_LABELS[rep.type] || rep.type;
+          const isGeral = rep.name.toLowerCase() === "geral";
+          const rotation = isGeral ? "rotate-0" : idx % 3 === 0 ? "rotate-1" : idx % 3 === 1 ? "-rotate-1" : "rotate-0";
+          const typeLabel = isGeral ? "Compilado Geral" : (REP_TYPE_LABELS[rep.type] || rep.type);
           const repIndex = representatives.findIndex((r) => r.id === rep.id);
-          const displayName = getMaskedArtistName(rep, repIndex >= 0 ? repIndex : idx, isAdmin);
-          const displayContact = getMaskedContactInfo(rep.contactInfo, isAdmin);
+          const displayName = isGeral ? "Geral" : getMaskedArtistName(rep, repIndex >= 0 ? repIndex : idx, isAdmin);
+          const displayContact = isGeral ? (rep.contactInfo || "Acervo Base & Repertório Geral") : getMaskedContactInfo(rep.contactInfo, isAdmin);
 
           return (
             <div
               key={rep.id}
-              className={`relative bg-surface border-2 border-ink rounded-2xl p-6 shadow-neo transition-all hover:scale-[1.02] hover:z-10 flex flex-col justify-between group ${rotation}`}
+              className={`relative bg-surface border-2 ${
+                isGeral ? "border-ink ring-4 ring-accent-lime/40" : "border-ink"
+              } rounded-2xl p-6 shadow-neo transition-all hover:scale-[1.02] hover:z-10 flex flex-col justify-between group ${rotation}`}
             >
               {/* Top Badge */}
               <div className="flex items-center justify-between gap-2 mb-4">
-                <span className="bg-accent-lavender border-2 border-ink px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_#161616] font-[family-name:var(--font-dm-sans)] text-ink truncate">
+                <span className={`${
+                  isGeral 
+                    ? "bg-accent-lime text-ink" 
+                    : "bg-accent-lavender text-ink"
+                } border-2 border-ink px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_#161616] font-[family-name:var(--font-dm-sans)] flex items-center gap-1.5 truncate`}>
+                  {isGeral && <Sparkles className="w-3.5 h-3.5 shrink-0" />}
                   {typeLabel}
                 </span>
 
@@ -426,7 +461,7 @@ export default function RepresentativesPage() {
                   <div className="flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
                     <button
                       type="button"
-                      title="Editar Artista"
+                      title={isGeral ? "Editar Informações do Geral" : "Editar Artista"}
                       onClick={(e) => {
                         e.stopPropagation();
                         setFormData({
@@ -441,17 +476,19 @@ export default function RepresentativesPage() {
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
 
-                    <button
-                      type="button"
-                      title="Excluir Artista"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeletingRep(rep);
-                      }}
-                      className="p-1.5 border border-ink rounded-lg bg-surface hover:bg-accent-cherry hover:text-surface text-ink shadow-[1px_1px_0px_#161616]"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {!isGeral && (
+                      <button
+                        type="button"
+                        title="Excluir Artista"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeletingRep(rep);
+                        }}
+                        className="p-1.5 border border-ink rounded-lg bg-surface hover:bg-accent-cherry hover:text-surface text-ink shadow-[1px_1px_0px_#161616]"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -459,9 +496,17 @@ export default function RepresentativesPage() {
               {/* Avatar Box */}
               <div
                 onClick={() => openModal(rep)}
-                className="w-full h-28 bg-canvas border-2 border-ink rounded-xl mb-4 flex items-center justify-center cursor-pointer group-hover:bg-accent-lavender/25 transition-colors relative overflow-hidden"
+                className={`w-full h-28 ${
+                  isGeral ? "bg-accent-lime/15 hover:bg-accent-lime/25" : "bg-canvas hover:bg-accent-lavender/25"
+                } border-2 border-ink rounded-xl mb-4 flex items-center justify-center cursor-pointer transition-colors relative overflow-hidden`}
               >
-                {!isAdmin && (
+                {isGeral ? (
+                  <div className="absolute top-2 right-2 z-10">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-ink text-accent-lime text-[10px] font-black uppercase rounded-md shadow-sm font-[family-name:var(--font-dm-sans)]">
+                      <Layers className="w-2.5 h-2.5" /> Acervo Completo
+                    </span>
+                  </div>
+                ) : !isAdmin && (
                   <div className="absolute top-2 right-2 z-10">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-ink text-accent-lime text-[10px] font-black uppercase rounded-md shadow-sm font-[family-name:var(--font-dm-sans)]">
                       <Lock className="w-2.5 h-2.5" /> Bloqueado
@@ -469,7 +514,9 @@ export default function RepresentativesPage() {
                   </div>
                 )}
                 <div className="w-14 h-14 bg-ink rounded-full flex items-center justify-center text-surface group-hover:scale-110 transition-transform shadow-[2px_2px_0px_#161616]">
-                  {isAdmin ? (
+                  {isGeral ? (
+                    <Layers className="w-7 h-7 text-accent-lime" />
+                  ) : isAdmin ? (
                     <User className="w-7 h-7 text-accent-lime" />
                   ) : (
                     <Lock className="w-7 h-7 text-accent-lavender" />
@@ -479,7 +526,22 @@ export default function RepresentativesPage() {
 
               {/* Name & Contact */}
               <div onClick={() => openModal(rep)} className="cursor-pointer">
-                {isAdmin ? (
+                {isGeral ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-3xl font-black text-ink uppercase tracking-tight font-[family-name:var(--font-oswald)] group-hover:text-accent-orange transition-colors">
+                        Geral
+                      </h3>
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-accent-lavender border border-ink rounded-md">
+                        {catalogSongs.length > 0 ? `${catalogSongs.length} faixas` : "Todas as Músicas"}
+                      </span>
+                    </div>
+                    <p className="text-xs font-semibold text-dim mt-1 font-[family-name:var(--font-dm-sans)] flex items-center gap-1.5 leading-snug">
+                      <Music2 className="w-3.5 h-3.5 text-accent-cherry shrink-0" />
+                      Compilado automático de todas as obras do acervo
+                    </p>
+                  </>
+                ) : isAdmin ? (
                   <>
                     <h3 className="text-3xl font-black text-ink uppercase tracking-tight font-[family-name:var(--font-oswald)] group-hover:text-accent-orange transition-colors">
                       {rep.name}
@@ -533,9 +595,13 @@ export default function RepresentativesPage() {
                 <button
                   type="button"
                   onClick={() => openModal(rep)}
-                  className="w-full py-2 px-3 rounded-xl border-2 border-ink bg-surface hover:bg-accent-lime font-black text-xs uppercase tracking-wider text-ink transition-all shadow-[2px_2px_0px_#161616] font-[family-name:var(--font-dm-sans)] text-center block"
+                  className={`w-full py-2 px-3 rounded-xl border-2 border-ink ${
+                    isGeral
+                      ? "bg-accent-lime hover:bg-accent-lime/90 font-black"
+                      : "bg-surface hover:bg-accent-lime font-black"
+                  } text-xs uppercase tracking-wider text-ink transition-all shadow-[2px_2px_0px_#161616] font-[family-name:var(--font-dm-sans)] text-center block`}
                 >
-                  Abrir Repertório &rarr;
+                  {isGeral ? "Abrir Compilado Geral →" : "Abrir Repertório →"}
                 </button>
               </div>
             </div>
@@ -555,7 +621,16 @@ export default function RepresentativesPage() {
             <div className="px-6 md:px-8 py-5 border-b-2 border-ink flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-canvas">
               <div>
                 <div className="flex items-center gap-3">
-                  {isAdmin ? (
+                  {selectedRep.name.toLowerCase() === "geral" ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-accent-lime border-2 border-ink flex items-center justify-center shadow-[1px_1px_0px_#161616]">
+                        <Layers className="w-4 h-4 text-ink" />
+                      </div>
+                      <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-ink font-[family-name:var(--font-oswald)]">
+                        Geral • Compilado do Acervo
+                      </h3>
+                    </div>
+                  ) : isAdmin ? (
                     <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-ink font-[family-name:var(--font-oswald)]">
                       {selectedRep.name}
                     </h3>
@@ -568,13 +643,19 @@ export default function RepresentativesPage() {
                     </div>
                   )}
 
-                  <span className="px-2.5 py-1 bg-accent-lavender border-2 border-ink rounded-lg text-xs font-black uppercase font-[family-name:var(--font-dm-sans)]">
-                    {REP_TYPE_LABELS[selectedRep.type] || selectedRep.type}
+                  <span className={`px-2.5 py-1 ${selectedRep.name.toLowerCase() === "geral" ? "bg-accent-lime text-ink" : "bg-accent-lavender text-ink"} border-2 border-ink rounded-lg text-xs font-black uppercase font-[family-name:var(--font-dm-sans)]`}>
+                    {selectedRep.name.toLowerCase() === "geral" ? "Todas as Músicas" : (REP_TYPE_LABELS[selectedRep.type] || selectedRep.type)}
                   </span>
                 </div>
 
                 <p className="text-xs md:text-sm font-semibold text-dim mt-1.5 font-[family-name:var(--font-dm-sans)] flex items-center gap-2">
-                  {!isAdmin ? (
+                  {selectedRep.name.toLowerCase() === "geral" ? (
+                    <>
+                      <span className="text-ink font-bold">✨ Compilado dinâmico de todo o acervo</span>
+                      <span>·</span>
+                      <span>Total de {songs.length} faixas cadastradas</span>
+                    </>
+                  ) : !isAdmin ? (
                     <>
                       <span className="text-ink font-bold">🔒 Dados bloqueados para proteger o nome dos artistas</span>
                       <span>·</span>
@@ -595,7 +676,7 @@ export default function RepresentativesPage() {
                   <>
                     <button
                       type="button"
-                      title="Editar Informações do Artista"
+                      title={selectedRep.name.toLowerCase() === "geral" ? "Editar Informações do Geral" : "Editar Informações do Artista"}
                       onClick={() => {
                         setFormData({
                           name: selectedRep.name,
@@ -609,18 +690,30 @@ export default function RepresentativesPage() {
                       <Edit3 className="w-4 h-4" />
                     </button>
 
-                    <button
-                      type="button"
-                      title="Excluir Artista"
-                      onClick={() => {
-                        setDeletingRep(selectedRep);
-                      }}
-                      className="p-2.5 border-2 border-ink rounded-xl bg-surface hover:bg-accent-cherry hover:text-surface text-ink transition-colors shadow-[2px_2px_0px_#161616]"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {selectedRep.name.toLowerCase() !== "geral" && (
+                      <button
+                        type="button"
+                        title="Excluir Artista"
+                        onClick={() => {
+                          setDeletingRep(selectedRep);
+                        }}
+                        className="p-2.5 border-2 border-ink rounded-xl bg-surface hover:bg-accent-cherry hover:text-surface text-ink transition-colors shadow-[2px_2px_0px_#161616]"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </>
                 )}
+
+                <button
+                  type="button"
+                  title="Recarregar repertório do servidor"
+                  onClick={() => openModal(selectedRep, true)}
+                  disabled={isLoadingSongs}
+                  className="p-2.5 border-2 border-ink rounded-xl bg-surface hover:bg-muted text-ink transition-colors shadow-[2px_2px_0px_#161616] disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-4 h-4 text-ink ${isLoadingSongs ? "animate-spin" : ""}`} />
+                </button>
 
                 <StickerPillButton
                   variant="lavender"
@@ -811,7 +904,7 @@ export default function RepresentativesPage() {
                       <thead className="bg-muted border-b-2 border-ink">
                         <tr>
                           <th className="py-3.5 px-4 font-black uppercase tracking-wider text-xs font-[family-name:var(--font-dm-sans)]">
-                            Tom de Execução
+                            {selectedRep.name.toLowerCase() === "geral" ? "Tom Base" : "Tom de Execução"}
                           </th>
                           <th className="py-3.5 px-4 font-black uppercase tracking-wider text-xs font-[family-name:var(--font-dm-sans)]">
                             Música & Compositor
@@ -820,7 +913,7 @@ export default function RepresentativesPage() {
                             Domínio
                           </th>
                           <th className="py-3.5 px-4 font-black uppercase tracking-wider text-xs font-[family-name:var(--font-dm-sans)]">
-                            Intersecções & Outros Artistas
+                            {selectedRep.name.toLowerCase() === "geral" ? "Projetos Parceiros que Executam" : "Intersecções & Outros Artistas"}
                           </th>
                         </tr>
                       </thead>
@@ -873,7 +966,7 @@ export default function RepresentativesPage() {
                                   ))
                                 ) : (
                                   <span className="text-[11px] text-dim/60 font-medium italic mr-1">
-                                    Exclusiva deste projeto
+                                    {selectedRep.name.toLowerCase() === "geral" ? "Apenas no acervo geral (Sem projetos)" : "Exclusiva deste projeto"}
                                   </span>
                                 )}
 
@@ -955,7 +1048,7 @@ export default function RepresentativesPage() {
                               ))
                             ) : (
                               <span className="text-[10px] text-dim/70 italic">
-                                Exclusiva deste projeto
+                                {selectedRep.name.toLowerCase() === "geral" ? "Apenas no acervo geral (Sem projetos)" : "Exclusiva deste projeto"}
                               </span>
                             )}
                           </div>

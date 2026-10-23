@@ -465,13 +465,18 @@ export function SongFormModal({
                     </span>
                   </div>
                   <p className="text-[11px] text-dim font-medium mt-0.5">
-                    Vincule a música a um ou mais representantes e ajuste o tom individual de execução.
+                    Vincule a música a um ou mais projetos parceiros e ajuste o tom individual de execução.
+                    <span className="block text-[10px] text-accent-cherry font-bold mt-0.5">
+                      * Todas as músicas cadastradas entram automaticamente no compilado &ldquo;Geral&rdquo;.
+                    </span>
                   </p>
                 </div>
 
                 {/* Quick Toggle Pills */}
                 <div className="flex flex-wrap gap-2">
-                  {representatives.map((rep) => {
+                  {representatives
+                    .filter((rep) => rep.name.toLowerCase() !== "geral")
+                    .map((rep) => {
                     const isSelected = !!repLinksMap[rep.id];
                     return (
                       <button

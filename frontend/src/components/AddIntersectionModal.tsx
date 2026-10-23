@@ -35,7 +35,9 @@ export function AddIntersectionModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const availableReps = allRepresentatives.filter((r) => r.id !== currentRepresentativeId);
+  const availableReps = allRepresentatives.filter(
+    (r) => r.id !== currentRepresentativeId && r.name.toLowerCase() !== "geral"
+  );
 
   // Initialize key with song's key when opened
   const handleOpen = () => {

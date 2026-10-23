@@ -313,7 +313,9 @@ export function DailyPracticeModal({ isOpen, onClose }: DailyPracticeModalProps)
                 </button>
 
                 {/* Artists list */}
-                {representatives.map((rep, idx) => {
+                {representatives
+                  .filter((rep) => rep.name.toLowerCase() !== "geral")
+                  .map((rep, idx) => {
                   const isSelected = selectedRepIds.includes(rep.id);
                   const displayName = getMaskedArtistName(rep, idx, isAdmin);
 
