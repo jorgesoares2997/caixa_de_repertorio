@@ -10,6 +10,7 @@ export type AuthUser = {
   username: string;
   name: string;
   role: UserRole;
+  email?: string;
   token?: string;
 };
 
@@ -179,6 +180,7 @@ interface AppState {
   gigs: Gig[];
   stats: Stats | null;
   genres: GenreItem[];
+  dashboardDataCache: Record<string, { data: DashboardData; timestamp: number }>;
 
   // Cache Timestamps (ms)
   lastFetchedSongs: number | null;
@@ -211,18 +213,22 @@ interface AppState {
 
   // Actions - Gigs
   fetchGigs: (force?: boolean) => Promise<Gig[]>;
+  addGig: (gigData: any) => Promise<Gig>;
+  deleteGig: (id: string) => Promise<void>;
 
   // Actions - Stats & Dashboard
   fetchStats: (force?: boolean) => Promise<Stats | null>;
-  fetchDashboardData: (period?: string) => Promise<DashboardData | null>;
+  fetchDashboardData: (period?: string, force?: boolean) => Promise<DashboardData | null>;
 
   // Actions - Genres
   fetchGenres: (force?: boolean) => Promise<GenreItem[]>;
   addCustomGenre: (name: string, color?: string) => Promise<GenreItem>;
+  renameGenre: (oldName: string, newName: string, color?: string) => Promise<void>;
+  deleteGenre: (idOrName: string) => Promise<void>;
   deleteCustomGenre: (id: string) => Promise<void>;
 
   // Cache Invalidation & Manual Reset
-  invalidateCache: (key?: "songs" | "representatives" | "gigs" | "stats" | "genres" | "all") => void;
+  invalidateCache: (key?: "songs" | "representatives" | "gigs" | "stats" | "genres" | "dashboard" | "all") => void;
   clearAllCache: () => void;
 }
 
@@ -280,6 +286,7 @@ export const useAppStore = create<AppState>()(
       gigs: [],
       stats: null,
       genres: [],
+      dashboardDataCache: {},
 
       lastFetchedSongs: null,
       lastFetchedRepresentatives: null,
@@ -295,11 +302,10 @@ export const useAppStore = create<AppState>()(
 
       // --- SONGS ---
       fetchSongs: async (force = false) => {
-        const { songs, lastFetchedSongs, isLoadingSongs } = get();
-        const now = Date.now();
-        const isFresh = lastFetchedSongs && (now - lastFetchedSongs < CACHE_TTL);
+        const { songs, isLoadingSongs } = get();
 
-        if (!force && songs.length > 0 && isFresh) {
+        // CACHE-FIRST: If songs are already in localStorage cache, return immediately
+        if (!force && songs && songs.length > 0) {
           return songs;
         }
 
@@ -343,7 +349,7 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           songs: [created, ...state.songs],
           lastFetchedSongs: Date.now(),
-          representativeSongsCache: {}, // invalidate rep songs cache to reflect new links
+          dashboardDataCache: {}, // Invalidate dashboard cache to reflect new song
           stats: state.stats
             ? {
                 ...state.stats,
@@ -373,11 +379,32 @@ export const useAppStore = create<AppState>()(
         }
         const updated: Song = await res.json();
 
-        set((state) => ({
-          songs: state.songs.map((s) => (s.id === id ? updated : s)),
-          lastFetchedSongs: Date.now(),
-          representativeSongsCache: {}, // invalidate rep songs cache
-        }));
+        set((state) => {
+          // Intelligently update rep songs cache in-place without wiping all artist repertoires
+          const updatedRepCache = Object.fromEntries(
+            Object.entries(state.representativeSongsCache).map(([repId, repSongs]) => [
+              repId,
+              repSongs.map((s) =>
+                s.songId === id
+                  ? {
+                      ...s,
+                      title: updated.title,
+                      composer: updated.composer || s.composer,
+                      genre: updated.genre || s.genre,
+                      masteryLevel: updated.masteryLevel,
+                    }
+                  : s
+              ),
+            ])
+          );
+
+          return {
+            songs: state.songs.map((s) => (s.id === id ? updated : s)),
+            lastFetchedSongs: Date.now(),
+            representativeSongsCache: updatedRepCache,
+            dashboardDataCache: {}, // Invalidate dashboard cache
+          };
+        });
 
         return updated;
       },
@@ -398,7 +425,13 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           songs: state.songs.filter((s) => s.id !== id),
           lastFetchedSongs: Date.now(),
-          representativeSongsCache: {},
+          representativeSongsCache: Object.fromEntries(
+            Object.entries(state.representativeSongsCache).map(([repId, repSongs]) => [
+              repId,
+              repSongs.filter((s) => s.songId !== id),
+            ])
+          ),
+          dashboardDataCache: {},
           stats: state.stats
             ? {
                 ...state.stats,
@@ -430,6 +463,7 @@ export const useAppStore = create<AppState>()(
               ),
             ])
           ),
+          dashboardDataCache: {},
           stats: state.stats
             ? {
                 ...state.stats,
@@ -462,7 +496,15 @@ export const useAppStore = create<AppState>()(
           songs: state.songs.map((s) =>
             s.id === id ? { ...s, genre: cleanGenre } : s
           ),
-          representativeSongsCache: {}, // Invalidate cache so representative lists also update
+          representativeSongsCache: Object.fromEntries(
+            Object.entries(state.representativeSongsCache).map(([repId, repSongs]) => [
+              repId,
+              repSongs.map((rs) =>
+                rs.songId === id ? { ...rs, genre: cleanGenre } : rs
+              ),
+            ])
+          ),
+          dashboardDataCache: {},
         }));
 
         try {
@@ -488,14 +530,14 @@ export const useAppStore = create<AppState>()(
 
       // --- REPRESENTATIVES ---
       fetchRepresentatives: async (force = false) => {
-        const { representatives, lastFetchedRepresentatives } = get();
-        const now = Date.now();
-        const isFresh =
-          lastFetchedRepresentatives && now - lastFetchedRepresentatives < CACHE_TTL;
+        const { representatives, isLoadingRepresentatives } = get();
 
-        if (!force && representatives.length > 0 && isFresh) {
+        // CACHE-FIRST: Return immediately from localStorage
+        if (!force && representatives && representatives.length > 0) {
           return representatives;
         }
+
+        if (isLoadingRepresentatives) return representatives;
 
         set({ isLoadingRepresentatives: true });
         try {
@@ -521,7 +563,8 @@ export const useAppStore = create<AppState>()(
         const { representativeSongsCache } = get();
         const cached = representativeSongsCache[representativeId];
 
-        if (!force && cached && cached.length > 0) {
+        // CACHE-FIRST: If already cached for this representative, return immediately
+        if (!force && cached !== undefined) {
           return cached;
         }
 
@@ -558,6 +601,7 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           representatives: [created, ...state.representatives.filter((r) => r.id !== created.id)],
           lastFetchedRepresentatives: Date.now(),
+          dashboardDataCache: {},
         }));
         return created;
       },
@@ -577,6 +621,7 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           representatives: state.representatives.map((r) => (r.id === id ? updated : r)),
           lastFetchedRepresentatives: Date.now(),
+          dashboardDataCache: {},
         }));
         return updated;
       },
@@ -600,19 +645,23 @@ export const useAppStore = create<AppState>()(
             ),
           })),
           lastFetchedRepresentatives: Date.now(),
-          representativeSongsCache: {},
+          representativeSongsCache: Object.fromEntries(
+            Object.entries(state.representativeSongsCache).filter(([repId]) => repId !== id)
+          ),
+          dashboardDataCache: {},
         }));
       },
 
       // --- GIGS ---
       fetchGigs: async (force = false) => {
-        const { gigs, lastFetchedGigs } = get();
-        const now = Date.now();
-        const isFresh = lastFetchedGigs && now - lastFetchedGigs < CACHE_TTL;
+        const { gigs, isLoadingGigs } = get();
 
-        if (!force && gigs.length > 0 && isFresh) {
+        // CACHE-FIRST: Return immediately from localStorage
+        if (!force && gigs && gigs.length > 0) {
           return gigs;
         }
+
+        if (isLoadingGigs) return gigs;
 
         set({ isLoadingGigs: true });
         try {
@@ -634,15 +683,69 @@ export const useAppStore = create<AppState>()(
         return get().gigs;
       },
 
+      addGig: async (gigData) => {
+        const token = get().currentUser?.token;
+        const res = await fetch(`${API_URL}/api/gigs`, {
+          method: "POST",
+          headers: getAuthHeaders(token),
+          body: JSON.stringify(gigData),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => null);
+          throw new Error(errData?.message || "Falha ao salvar show no servidor.");
+        }
+        const created: Gig = await res.json();
+
+        set((state) => ({
+          gigs: [created, ...state.gigs.filter((g) => g.id !== created.id)],
+          lastFetchedGigs: Date.now(),
+          dashboardDataCache: {},
+          stats: state.stats
+            ? {
+                ...state.stats,
+                upcomingGigs: state.stats.upcomingGigs + 1,
+              }
+            : null,
+        }));
+        return created;
+      },
+
+      deleteGig: async (id: string) => {
+        const token = get().currentUser?.token;
+        const res = await fetch(`${API_URL}/api/gigs/${id}`, {
+          method: "DELETE",
+          headers: getAuthHeaders(token),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => null);
+          throw new Error(errData?.message || "Falha ao excluir show no servidor.");
+        }
+
+        set((state) => ({
+          gigs: state.gigs.filter((g) => g.id !== id),
+          lastFetchedGigs: Date.now(),
+          dashboardDataCache: {},
+          stats: state.stats
+            ? {
+                ...state.stats,
+                upcomingGigs: Math.max(0, state.stats.upcomingGigs - 1),
+              }
+            : null,
+        }));
+      },
+
       // --- STATS ---
       fetchStats: async (force = false) => {
-        const { stats, lastFetchedStats } = get();
-        const now = Date.now();
-        const isFresh = lastFetchedStats && now - lastFetchedStats < CACHE_TTL;
+        const { stats, isLoadingStats } = get();
 
-        if (!force && stats !== null && isFresh) {
+        // CACHE-FIRST: Return immediately from localStorage
+        if (!force && stats !== null) {
           return stats;
         }
+
+        if (isLoadingStats) return stats;
 
         set({ isLoadingStats: true });
         try {
@@ -664,28 +767,43 @@ export const useAppStore = create<AppState>()(
         return get().stats;
       },
 
-      fetchDashboardData: async (period = "month") => {
+      fetchDashboardData: async (period = "month", force = false) => {
+        const { dashboardDataCache } = get();
+        const cached = dashboardDataCache[period];
+
+        // CACHE-FIRST: Return immediately from localStorage
+        if (!force && cached && cached.data) {
+          return cached.data;
+        }
+
         try {
           const res = await fetch(`${API_URL}/api/analytics/dashboard?period=${period}`);
           if (res.ok) {
             const data: DashboardData = await res.json();
+            set((state) => ({
+              dashboardDataCache: {
+                ...state.dashboardDataCache,
+                [period]: { data, timestamp: Date.now() },
+              },
+            }));
             return data;
           }
         } catch (err) {
           console.error("[useAppStore] Error fetching dashboard data:", err);
         }
-        return null;
+        return cached?.data || null;
       },
 
       // --- GENRES ---
       fetchGenres: async (force = false) => {
-        const { genres, lastFetchedGenres } = get();
-        const now = Date.now();
-        const isFresh = lastFetchedGenres && now - lastFetchedGenres < CACHE_TTL;
+        const { genres, isLoadingGenres } = get();
 
-        if (!force && genres.length > 0 && isFresh) {
+        // CACHE-FIRST: Return immediately from localStorage
+        if (!force && genres && genres.length > 0) {
           return genres;
         }
+
+        if (isLoadingGenres) return genres;
 
         set({ isLoadingGenres: true });
         try {
@@ -722,24 +840,51 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           genres: [...state.genres.filter((g) => g.name.toLowerCase() !== created.name.toLowerCase()), created],
           lastFetchedGenres: Date.now(),
+          dashboardDataCache: {},
         }));
         return created;
       },
 
-      deleteCustomGenre: async (id: string) => {
+      renameGenre: async (oldName: string, newName: string, color?: string) => {
         const token = get().currentUser?.token;
-        const res = await fetch(`${API_URL}/api/genres/${id}`, {
+        const res = await fetch(`${API_URL}/api/genres`, {
+          method: "PUT",
+          headers: getAuthHeaders(token),
+          body: JSON.stringify({ oldName: oldName.trim(), newName: newName.trim(), color }),
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => null);
+          throw new Error(errData?.error || errData?.message || "Falha ao atualizar estilo musical.");
+        }
+        get().invalidateCache("genres");
+        get().invalidateCache("stats");
+        get().invalidateCache("songs");
+        get().invalidateCache("dashboard");
+      },
+
+      deleteGenre: async (idOrName: string) => {
+        const token = get().currentUser?.token;
+        const res = await fetch(`${API_URL}/api/genres/${encodeURIComponent(idOrName.trim())}`, {
           method: "DELETE",
           headers: getAuthHeaders(token),
         });
         if (!res.ok) {
           const errData = await res.json().catch(() => null);
-          throw new Error(errData?.message || "Falha ao remover estilo musical.");
+          throw new Error(errData?.error || errData?.message || "Falha ao remover estilo musical.");
         }
         set((state) => ({
-          genres: state.genres.filter((g) => g.id !== id),
+          genres: state.genres.filter((g) => g.id !== idOrName && g.name.toLowerCase() !== idOrName.toLowerCase()),
           lastFetchedGenres: Date.now(),
+          dashboardDataCache: {},
         }));
+        get().invalidateCache("genres");
+        get().invalidateCache("stats");
+        get().invalidateCache("songs");
+        get().invalidateCache("dashboard");
+      },
+
+      deleteCustomGenre: async (id: string) => {
+        return get().deleteGenre(id);
       },
 
       // --- CACHE MANAGEMENT ---
@@ -752,17 +897,20 @@ export const useAppStore = create<AppState>()(
             lastFetchedGigs: null,
             lastFetchedStats: null,
             lastFetchedGenres: null,
+            dashboardDataCache: {},
           });
         } else if (key === "songs") {
-          set({ lastFetchedSongs: null, representativeSongsCache: {} });
+          set({ lastFetchedSongs: null, dashboardDataCache: {} });
         } else if (key === "representatives") {
           set({ lastFetchedRepresentatives: null, representativeSongsCache: {} });
         } else if (key === "gigs") {
-          set({ lastFetchedGigs: null });
+          set({ lastFetchedGigs: null, dashboardDataCache: {} });
         } else if (key === "stats") {
           set({ lastFetchedStats: null });
         } else if (key === "genres") {
-          set({ lastFetchedGenres: null });
+          set({ lastFetchedGenres: null, dashboardDataCache: {} });
+        } else if (key === "dashboard") {
+          set({ dashboardDataCache: {} });
         }
       },
 
@@ -777,6 +925,7 @@ export const useAppStore = create<AppState>()(
           gigs: [],
           stats: null,
           genres: [],
+          dashboardDataCache: {},
           lastFetchedSongs: null,
           lastFetchedRepresentatives: null,
           lastFetchedGigs: null,
@@ -799,6 +948,7 @@ export const useAppStore = create<AppState>()(
         gigs: state.gigs,
         stats: state.stats,
         genres: state.genres,
+        dashboardDataCache: state.dashboardDataCache,
         lastFetchedSongs: state.lastFetchedSongs,
         lastFetchedRepresentatives: state.lastFetchedRepresentatives,
         lastFetchedGigs: state.lastFetchedGigs,
