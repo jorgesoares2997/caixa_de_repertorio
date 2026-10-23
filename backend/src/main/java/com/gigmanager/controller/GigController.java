@@ -33,6 +33,7 @@ public class GigController {
     private final RepresentativeRepository representativeRepository;
     private final PdfService pdfService;
     private final WhatsAppService whatsAppService;
+    private final com.gigmanager.service.EmailService emailService;
 
     @Value("${evolution-api.target-number}")
     private String targetNumber;
@@ -42,13 +43,15 @@ public class GigController {
                          SongRepository songRepository,
                          RepresentativeRepository representativeRepository,
                          PdfService pdfService,
-                         WhatsAppService whatsAppService) {
+                         WhatsAppService whatsAppService,
+                         com.gigmanager.service.EmailService emailService) {
         this.gigRepository = gigRepository;
         this.gigItemRepository = gigItemRepository;
         this.songRepository = songRepository;
         this.representativeRepository = representativeRepository;
         this.pdfService = pdfService;
         this.whatsAppService = whatsAppService;
+        this.emailService = emailService;
     }
 
     @GetMapping
@@ -146,6 +149,21 @@ public class GigController {
             whatsAppService.sendMessage(targetNumber, message);
 
             return ResponseEntity.ok(Map.of("status", "sent", "to", targetNumber));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{id}/send-email")
+    public ResponseEntity<?> sendGigEmail(@PathVariable UUID id, @RequestBody(required = false) Map<String, String> body) {
+        String recipient = (body != null) ? body.get("recipientEmail") : null;
+        return gigRepository.findById(id).map(gig -> {
+            List<GigItem> items = gigItemRepository.findByGigIdOrdered(id);
+            byte[] pdfBytes = pdfService.generateGigSetlistPdf(gig, items);
+            boolean success = emailService.sendGigSetlistEmail(gig, items, pdfBytes, recipient);
+            if (success) {
+                return ResponseEntity.ok(Map.of("status", "sent", "recipient", recipient != null ? recipient : "default"));
+            } else {
+                return ResponseEntity.internalServerError().body(Map.of("error", "Falha ao enviar e-mail com anexo."));
+            }
         }).orElse(ResponseEntity.notFound().build());
     }
 

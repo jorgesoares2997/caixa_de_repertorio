@@ -123,12 +123,85 @@ public class GenreController {
         return ResponseEntity.ok(saved);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteGenre(@PathVariable UUID id) {
-        if (!customGenreRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+    @PutMapping
+    public ResponseEntity<?> updateGenre(@RequestBody Map<String, String> body) {
+        String oldName = body != null ? body.get("oldName") : null;
+        String newName = body != null ? body.get("newName") : null;
+        String color = body != null ? body.get("color") : null;
+
+        if (oldName == null || oldName.trim().isBlank() || newName == null || newName.trim().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Nome atual e novo nome são obrigatórios."));
         }
-        customGenreRepository.deleteById(id);
-        return ResponseEntity.ok(Map.of("success", true, "message", "Estilo musical removido."));
+
+        String cleanOld = oldName.trim();
+        String cleanNew = newName.trim();
+
+        // 1. Update CustomGenre if exists
+        Optional<CustomGenre> customOpt = customGenreRepository.findByNameIgnoreCase(cleanOld);
+        if (customOpt.isPresent()) {
+            CustomGenre cg = customOpt.get();
+            cg.setName(cleanNew);
+            if (color != null && !color.isBlank()) {
+                cg.setColor(color.trim());
+            }
+            customGenreRepository.save(cg);
+        } else if (color != null && !color.isBlank()) {
+            customGenreRepository.save(CustomGenre.builder()
+                    .name(cleanNew)
+                    .color(color.trim())
+                    .build());
+        }
+
+        // 2. Update any songs that had this genre
+        List<Song> songsWithOldGenre = songRepository.findByGenreIgnoreCase(cleanOld);
+        for (Song s : songsWithOldGenre) {
+            s.setGenre(cleanNew);
+            songRepository.save(s);
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Estilo musical atualizado com sucesso.",
+                "updatedSongs", songsWithOldGenre.size()
+        ));
+    }
+
+    @DeleteMapping("/{idOrName}")
+    public ResponseEntity<?> deleteGenre(@PathVariable String idOrName) {
+        if (idOrName == null || idOrName.trim().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Identificador ou nome do estilo é obrigatório."));
+        }
+
+        String cleanTarget = java.net.URLDecoder.decode(idOrName.trim(), java.nio.charset.StandardCharsets.UTF_8);
+        String targetName = cleanTarget;
+
+        // Try checking if it's a UUID
+        try {
+            UUID id = UUID.fromString(cleanTarget);
+            Optional<CustomGenre> byId = customGenreRepository.findById(id);
+            if (byId.isPresent()) {
+                targetName = byId.get().getName();
+                customGenreRepository.deleteById(id);
+            }
+        } catch (IllegalArgumentException e) {
+            // Not a UUID, treated as genre name directly
+        }
+
+        // Check if any CustomGenre exists by that name
+        Optional<CustomGenre> byName = customGenreRepository.findByNameIgnoreCase(targetName);
+        byName.ifPresent(customGenreRepository::delete);
+
+        // Update all songs with this genre to null
+        List<Song> songs = songRepository.findByGenreIgnoreCase(targetName);
+        for (Song s : songs) {
+            s.setGenre(null);
+            songRepository.save(s);
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Estilo musical '" + targetName + "' removido com sucesso.",
+                "unlinkedSongs", songs.size()
+        ));
     }
 }

@@ -30,8 +30,8 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        // Allow all read-only GET requests (portfolio and exploration for visitors)
-        if ("GET".equalsIgnoreCase(method)) {
+        // Allow all read-only GET/HEAD requests (portfolio and exploration for visitors)
+        if ("GET".equalsIgnoreCase(method) || "HEAD".equalsIgnoreCase(method)) {
             return true;
         }
 

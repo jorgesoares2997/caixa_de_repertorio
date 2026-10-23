@@ -34,5 +34,8 @@ public interface SongRepository extends JpaRepository<Song, UUID> {
 
     @Query("SELECT s FROM Song s WHERE LOWER(s.title) = LOWER(:title)")
     List<Song> findByTitleIgnoreCase(@Param("title") String title);
+
+    @Query("SELECT s FROM Song s WHERE LOWER(s.genre) = LOWER(:genre)")
+    List<Song> findByGenreIgnoreCase(@Param("genre") String genre);
 }
 

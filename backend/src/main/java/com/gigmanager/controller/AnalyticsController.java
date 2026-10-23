@@ -69,11 +69,17 @@ public class AnalyticsController {
 
         List<Map<String, Object>> artistStats = new ArrayList<>();
         for (Representative rep : allReps) {
-            List<RepresentativeSong> links = repSongsByRepId.getOrDefault(rep.getId(), Collections.emptyList());
-            List<Song> songsForRep = links.stream()
-                    .map(RepresentativeSong::getSong)
-                    .filter(Objects::nonNull)
-                    .toList();
+            boolean isGeral = "Geral".equalsIgnoreCase(rep.getName());
+            List<Song> songsForRep;
+            if (isGeral) {
+                songsForRep = allSongs;
+            } else {
+                List<RepresentativeSong> links = repSongsByRepId.getOrDefault(rep.getId(), Collections.emptyList());
+                songsForRep = links.stream()
+                        .map(RepresentativeSong::getSong)
+                        .filter(Objects::nonNull)
+                        .toList();
+            }
 
             int total = songsForRep.size();
             long lvl5 = songsForRep.stream().filter(s -> s.getMasteryLevel() != null && s.getMasteryLevel() == 5).count();
@@ -91,8 +97,9 @@ public class AnalyticsController {
             repMap.put("artistId", rep.getId());
             repMap.put("representativeName", rep.getName());
             repMap.put("artistName", rep.getName());
-            repMap.put("type", rep.getType() != null ? rep.getType().toString() : "OTHER");
-            repMap.put("artistType", rep.getType() != null ? rep.getType().toString() : "OTHER");
+            repMap.put("isCompilation", isGeral);
+            repMap.put("type", isGeral ? "COMPILADO GERAL" : (rep.getType() != null ? rep.getType().toString() : "OTHER"));
+            repMap.put("artistType", isGeral ? "COMPILADO GERAL" : (rep.getType() != null ? rep.getType().toString() : "OTHER"));
             repMap.put("totalSongs", total);
             repMap.put("averageMastery", Math.round(avgMastery * 10.0) / 10.0);
             repMap.put("level5Count", lvl5);

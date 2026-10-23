@@ -144,8 +144,18 @@ public class DailyPracticeScheduler {
                 : getActiveWeeklyRepresentativeIds();
 
         List<Song> practiceList = new ArrayList<>();
-
+        boolean includesGeral = false;
         if (!repIds.isEmpty()) {
+            for (UUID rId : repIds) {
+                Representative r = representativeRepository.findById(rId).orElse(null);
+                if (r != null && "Geral".equalsIgnoreCase(r.getName())) {
+                    includesGeral = true;
+                    break;
+                }
+            }
+        }
+
+        if (!repIds.isEmpty() && !includesGeral) {
             // Draw from selected artists
             // 2 songs level 1-2 (Dense Acquisition)
             practiceList.addAll(songRepository.findRandomSongsByRepresentativesAndMasteryLevels(repIds, List.of(1, 2), 2));

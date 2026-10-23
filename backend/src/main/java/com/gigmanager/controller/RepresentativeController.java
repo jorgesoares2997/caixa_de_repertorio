@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -99,11 +100,19 @@ public class RepresentativeController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    private boolean isGeral(Representative rep) {
+        return rep != null && "Geral".equalsIgnoreCase(rep.getName());
+    }
+
     @Transactional
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteRepresentative(@PathVariable UUID id) {
         return representativeRepository.findById(id)
                 .map(rep -> {
+                    if (isGeral(rep)) {
+                        return ResponseEntity.badRequest().body(Map.of("message", "O projeto compilado 'Geral' é nativo e não pode ser excluído."));
+                    }
+
                     // Remove links in representative_songs
                     representativeSongRepository.deleteByRepresentativeId(id);
 
@@ -134,7 +143,29 @@ public class RepresentativeController {
         Representative representative = representativeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Representative not found"));
         
-        List<RepresentativeSong> songs = representativeSongRepository.findByRepresentativeIdWithSong(id);
+        List<RepresentativeSong> songs;
+        if (isGeral(representative)) {
+            // "Geral" represents the compilation of all songs across all artists/projects
+            Map<UUID, RepresentativeSong> explicitMap = representativeSongRepository.findByRepresentativeIdWithSong(id).stream()
+                    .filter(rs -> rs.getSong() != null)
+                    .collect(Collectors.toMap(rs -> rs.getSong().getId(), rs -> rs, (a, b) -> a));
+
+            songs = songRepository.findAll().stream()
+                    .map(song -> {
+                        RepresentativeSong explicit = explicitMap.get(song.getId());
+                        if (explicit != null) {
+                            return explicit;
+                        }
+                        return RepresentativeSong.builder()
+                                .representative(representative)
+                                .song(song)
+                                .performanceKey(song.getOriginalKey() != null ? song.getOriginalKey() : "C")
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+        } else {
+            songs = representativeSongRepository.findByRepresentativeIdWithSong(id);
+        }
 
         // Filter by search query if specified
         if (search != null && !search.isBlank()) {
@@ -197,29 +228,75 @@ public class RepresentativeController {
 
     @GetMapping("/{id}/songs")
     public ResponseEntity<List<RepresentativeSongResponseDTO>> getSongsForRepresentative(@PathVariable UUID id) {
-        List<RepresentativeSong> songs = representativeSongRepository.findByRepresentativeIdWithSong(id);
+        Representative representative = representativeRepository.findById(id).orElse(null);
+        if (representative == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        boolean isGeral = isGeral(representative);
         List<RepresentativeSongResponseDTO> response = new ArrayList<>();
 
-        for (RepresentativeSong rs : songs) {
-            List<RepresentativeSong> allWithSong = representativeSongRepository.findBySongIdWithRepresentative(rs.getSong().getId());
-            
-            List<RepresentativeSongResponseDTO.IntersectionDTO> intersections = allWithSong.stream()
-                .filter(otherRs -> !otherRs.getRepresentative().getId().equals(id))
-                .map(otherRs -> new RepresentativeSongResponseDTO.IntersectionDTO(
-                    otherRs.getRepresentative().getName(),
-                    otherRs.getPerformanceKey() != null ? otherRs.getPerformanceKey() : rs.getSong().getOriginalKey()
-                ))
-                .collect(Collectors.toList());
+        if (isGeral) {
+            List<Song> allSongs = songRepository.findAll();
+            List<RepresentativeSong> allRepSongs = representativeSongRepository.findAll();
 
-            response.add(new RepresentativeSongResponseDTO(
-                rs.getSong().getId(),
-                rs.getSong().getTitle(),
-                rs.getSong().getComposer(),
-                rs.getSong().getGenre(),
-                rs.getSong().getMasteryLevel(),
-                rs.getPerformanceKey() != null ? rs.getPerformanceKey() : rs.getSong().getOriginalKey(),
-                intersections
-            ));
+            // Intersections: other representatives (excluding Geral) playing each song
+            Map<UUID, List<RepresentativeSong>> repSongsBySongId = allRepSongs.stream()
+                    .filter(rs -> rs.getSong() != null && rs.getRepresentative() != null && !rs.getRepresentative().getId().equals(id))
+                    .collect(Collectors.groupingBy(rs -> rs.getSong().getId()));
+
+            // Explicit customization for Geral if set
+            Map<UUID, RepresentativeSong> explicitMap = allRepSongs.stream()
+                    .filter(rs -> rs.getSong() != null && rs.getRepresentative() != null && rs.getRepresentative().getId().equals(id))
+                    .collect(Collectors.toMap(rs -> rs.getSong().getId(), rs -> rs, (a, b) -> a));
+
+            for (Song s : allSongs) {
+                RepresentativeSong explicit = explicitMap.get(s.getId());
+                String key = (explicit != null && explicit.getPerformanceKey() != null && !explicit.getPerformanceKey().isBlank())
+                        ? explicit.getPerformanceKey()
+                        : (s.getOriginalKey() != null ? s.getOriginalKey() : "C");
+
+                List<RepresentativeSong> others = repSongsBySongId.getOrDefault(s.getId(), Collections.emptyList());
+                List<RepresentativeSongResponseDTO.IntersectionDTO> intersections = others.stream()
+                        .map(otherRs -> new RepresentativeSongResponseDTO.IntersectionDTO(
+                                otherRs.getRepresentative().getName(),
+                                otherRs.getPerformanceKey() != null ? otherRs.getPerformanceKey() : (otherRs.getSong().getOriginalKey() != null ? otherRs.getSong().getOriginalKey() : "C")
+                        ))
+                        .collect(Collectors.toList());
+
+                response.add(new RepresentativeSongResponseDTO(
+                        s.getId(),
+                        s.getTitle(),
+                        s.getComposer(),
+                        s.getGenre(),
+                        s.getMasteryLevel(),
+                        key,
+                        intersections
+                ));
+            }
+        } else {
+            List<RepresentativeSong> songs = representativeSongRepository.findByRepresentativeIdWithSong(id);
+            for (RepresentativeSong rs : songs) {
+                List<RepresentativeSong> allWithSong = representativeSongRepository.findBySongIdWithRepresentative(rs.getSong().getId());
+                
+                List<RepresentativeSongResponseDTO.IntersectionDTO> intersections = allWithSong.stream()
+                    .filter(otherRs -> !otherRs.getRepresentative().getId().equals(id))
+                    .map(otherRs -> new RepresentativeSongResponseDTO.IntersectionDTO(
+                        otherRs.getRepresentative().getName(),
+                        otherRs.getPerformanceKey() != null ? otherRs.getPerformanceKey() : rs.getSong().getOriginalKey()
+                    ))
+                    .collect(Collectors.toList());
+
+                response.add(new RepresentativeSongResponseDTO(
+                    rs.getSong().getId(),
+                    rs.getSong().getTitle(),
+                    rs.getSong().getComposer(),
+                    rs.getSong().getGenre(),
+                    rs.getSong().getMasteryLevel(),
+                    rs.getPerformanceKey() != null ? rs.getPerformanceKey() : rs.getSong().getOriginalKey(),
+                    intersections
+                ));
+            }
         }
 
         return ResponseEntity.ok(response);
@@ -276,6 +353,20 @@ public class RepresentativeController {
             @PathVariable UUID representativeId,
             @PathVariable UUID songId
     ) {
+        Representative rep = representativeRepository.findById(representativeId).orElse(null);
+        if (rep != null && isGeral(rep)) {
+            List<RepresentativeSong> existing = representativeSongRepository.findByRepresentativeIdWithSong(representativeId);
+            existing.stream()
+                    .filter(rs -> rs.getSong() != null && rs.getSong().getId().equals(songId))
+                    .findFirst()
+                    .ifPresent(representativeSongRepository::delete);
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "A música faz parte do acervo geral. Customizações individuais de tom foram restauradas."
+            ));
+        }
+
         List<RepresentativeSong> existing = representativeSongRepository.findByRepresentativeIdWithSong(representativeId);
         existing.stream()
                 .filter(rs -> rs.getSong() != null && rs.getSong().getId().equals(songId))

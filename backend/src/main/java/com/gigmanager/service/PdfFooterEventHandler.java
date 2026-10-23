@@ -31,11 +31,11 @@ public class PdfFooterEventHandler implements IEventHandler {
         Canvas canvas = new Canvas(pdfCanvas, page.getPageSize());
 
         String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
-        String footerText = String.format("Emissão: %s | Total de obras vinculadas: %d | Página %d", date, totalSongs, pageNumber);
+        String footerText = String.format("CAIXA DE REPERTÓRIO • Emissão: %s • Total: %d faixas • Página %d", date, totalSongs, pageNumber);
 
-        canvas.showTextAligned(new Paragraph(footerText).setFontSize(9),
+        canvas.showTextAligned(new Paragraph(footerText).setFontSize(8).setBold(),
                 page.getPageSize().getWidth() / 2,
-                20, TextAlignment.CENTER);
+                18, TextAlignment.CENTER);
         
         canvas.close();
     }
