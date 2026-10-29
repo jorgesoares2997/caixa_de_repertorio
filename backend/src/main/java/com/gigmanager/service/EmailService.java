@@ -39,19 +39,26 @@ public class EmailService {
     }
 
     /**
-     * Sends the Gig Setlist via email with the generated PDF attached.
+     * Sends the Gig Setlist via email with both the Show PDF and Study PDF attached.
      * Uses Resend HTTP REST API if RESEND_API_KEY is configured (cloud firewall-friendly),
      * otherwise falls back to standard SMTP JavaMailSender.
      */
-    public boolean sendGigSetlistEmail(Gig gig, List<GigItem> items, byte[] pdfBytes, String recipientEmail) {
+    public boolean sendGigSetlistEmail(Gig gig, List<GigItem> items, byte[] showPdfBytes, byte[] studyPdfBytes, String recipientEmail) {
         String targetEmail = (recipientEmail != null && !recipientEmail.isBlank()) ? recipientEmail.trim() : mailFrom;
         String subject = "🎵 Escala do Show: " + gig.getTitle() + " • Caixa de Repertório";
         String htmlContent = buildGigEmailHtml(gig, items);
-        String filename = "setlist_" + sanitizeFilename(gig.getTitle()) + ".pdf";
+
+        Map<String, byte[]> attachments = new LinkedHashMap<>();
+        if (showPdfBytes != null && showPdfBytes.length > 0) {
+            attachments.put("setlist_show_" + sanitizeFilename(gig.getTitle()) + ".pdf", showPdfBytes);
+        }
+        if (studyPdfBytes != null && studyPdfBytes.length > 0) {
+            attachments.put("setlist_estudo_" + sanitizeFilename(gig.getTitle()) + ".pdf", studyPdfBytes);
+        }
 
         // 1. Resend API (HTTP 443)
         if (resendApiKey != null && !resendApiKey.isBlank()) {
-            return sendViaResend(targetEmail, subject, htmlContent, filename, pdfBytes);
+            return sendViaResendMulti(targetEmail, subject, htmlContent, attachments);
         }
 
         // 2. SMTP JavaMailSender fallback
@@ -64,10 +71,13 @@ public class EmailService {
             helper.setTo(targetEmail);
             helper.setSubject(subject);
             helper.setText(htmlContent, true);
-            helper.addAttachment(filename, new ByteArrayResource(pdfBytes), "application/pdf");
+
+            for (Map.Entry<String, byte[]> entry : attachments.entrySet()) {
+                helper.addAttachment(entry.getKey(), new ByteArrayResource(entry.getValue()), "application/pdf");
+            }
 
             mailSender.send(mimeMessage);
-            System.out.println("[EmailService] Successfully sent Gig setlist email via SMTP to " + targetEmail + " with attachment: " + filename);
+            System.out.println("[EmailService] Successfully sent Gig setlist email via SMTP to " + targetEmail + " with " + attachments.size() + " attachments.");
             return true;
         } catch (Exception e) {
             System.err.println("[EmailService] Failed to send Gig setlist email via SMTP to " + targetEmail + ": " + e.getMessage());
@@ -76,7 +86,14 @@ public class EmailService {
         }
     }
 
-    private boolean sendViaResend(String targetEmail, String subject, String htmlContent, String filename, byte[] pdfBytes) {
+    /**
+     * Backward-compatible overload for single PDF attachment.
+     */
+    public boolean sendGigSetlistEmail(Gig gig, List<GigItem> items, byte[] pdfBytes, String recipientEmail) {
+        return sendGigSetlistEmail(gig, items, pdfBytes, null, recipientEmail);
+    }
+
+    private boolean sendViaResendMulti(String targetEmail, String subject, String htmlContent, Map<String, byte[]> attachments) {
         try {
             Map<String, Object> payload = new HashMap<>();
             String from = (resendFrom != null && !resendFrom.isBlank()) ? resendFrom : "onboarding@resend.dev";
@@ -85,12 +102,15 @@ public class EmailService {
             payload.put("subject", subject);
             payload.put("html", htmlContent);
 
-            // Attachment with base64 content
-            if (pdfBytes != null && pdfBytes.length > 0) {
-                Map<String, String> attachment = new HashMap<>();
-                attachment.put("filename", filename);
-                attachment.put("content", Base64.getEncoder().encodeToString(pdfBytes));
-                payload.put("attachments", List.of(attachment));
+            if (attachments != null && !attachments.isEmpty()) {
+                List<Map<String, String>> attList = new ArrayList<>();
+                for (Map.Entry<String, byte[]> entry : attachments.entrySet()) {
+                    Map<String, String> att = new HashMap<>();
+                    att.put("filename", entry.getKey());
+                    att.put("content", Base64.getEncoder().encodeToString(entry.getValue()));
+                    attList.add(att);
+                }
+                payload.put("attachments", attList);
             }
 
             String json = objectMapper.writeValueAsString(payload);
@@ -110,14 +130,14 @@ public class EmailService {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                System.out.println("[EmailService] Successfully sent Gig setlist email via Resend API to " + targetEmail + " with attachment " + filename);
+                System.out.println("[EmailService] Successfully sent Gig setlist email via Resend to " + targetEmail);
                 return true;
             } else {
                 System.err.println("[EmailService] Resend API error (" + response.statusCode() + "): " + response.body());
                 return false;
             }
         } catch (Exception e) {
-            System.err.println("[EmailService] Failed to send email via Resend API: " + e.getMessage());
+            System.err.println("[EmailService] Error calling Resend API: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -189,7 +209,11 @@ public class EmailService {
 
         // PDF attachment banner
         sb.append("<div class='pdf-banner'>");
-        sb.append("📎 O PDF completo e diagramado do show está anexado a este e-mail.");
+        sb.append("📎 <b>2 PDFs anexados a este e-mail:</b><br/>");
+        sb.append("<span style='font-size: 12px; font-weight: 600;'>");
+        sb.append("• <b>PDF de Show:</b> 1 página única, ultra-enxuto para palco e visualização rápida.<br/>");
+        sb.append("• <b>PDF de Estudo:</b> Completo com nível de domínio musical de cada faixa.");
+        sb.append("</span>");
         sb.append("</div>");
 
         sb.append("</div>"); // content

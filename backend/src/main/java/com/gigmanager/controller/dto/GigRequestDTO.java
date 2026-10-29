@@ -14,6 +14,7 @@ public class GigRequestDTO {
     private String venue;
     private String notes;
     private UUID representativeId;
+    private String recipientEmail;
 
     private List<GigItemDTO> items;
 

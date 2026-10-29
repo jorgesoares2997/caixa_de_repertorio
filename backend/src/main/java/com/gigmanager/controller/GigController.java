@@ -113,6 +113,18 @@ public class GigController {
             }
         }
 
+        // Auto-send email asynchronously with both PDFs (Show & Study)
+        String emailTarget = request.getRecipientEmail();
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                byte[] showPdf = pdfService.generateGigShowPdf(saved, savedItems);
+                byte[] studyPdf = pdfService.generateGigStudyPdf(saved, savedItems);
+                emailService.sendGigSetlistEmail(saved, savedItems, showPdf, studyPdf, emailTarget);
+            } catch (Exception ex) {
+                System.err.println("[GigController] Error auto-sending gig email in background: " + ex.getMessage());
+            }
+        });
+
         return ResponseEntity.ok(toResponseDTO(saved, savedItems));
     }
 
@@ -129,13 +141,35 @@ public class GigController {
     }
 
     @GetMapping("/{id}/pdf")
-    public ResponseEntity<byte[]> getGigPdf(@PathVariable UUID id) {
+    public ResponseEntity<byte[]> getGigPdf(@PathVariable UUID id,
+                                            @RequestParam(value = "type", defaultValue = "show") String type) {
+        if ("study".equalsIgnoreCase(type)) {
+            return getGigStudyPdf(id);
+        }
+        return getGigShowPdf(id);
+    }
+
+    @GetMapping("/{id}/pdf/show")
+    public ResponseEntity<byte[]> getGigShowPdf(@PathVariable UUID id) {
         return gigRepository.findById(id).map(gig -> {
             List<GigItem> items = gigItemRepository.findByGigIdOrdered(id);
-            byte[] pdfBytes = pdfService.generateGigSetlistPdf(gig, items);
+            byte[] pdfBytes = pdfService.generateGigShowPdf(gig, items);
 
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=setlist_" + id + ".pdf")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=setlist_show_" + id + ".pdf")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(pdfBytes);
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{id}/pdf/study")
+    public ResponseEntity<byte[]> getGigStudyPdf(@PathVariable UUID id) {
+        return gigRepository.findById(id).map(gig -> {
+            List<GigItem> items = gigItemRepository.findByGigIdOrdered(id);
+            byte[] pdfBytes = pdfService.generateGigStudyPdf(gig, items);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=setlist_estudo_" + id + ".pdf")
                     .contentType(MediaType.APPLICATION_PDF)
                     .body(pdfBytes);
         }).orElse(ResponseEntity.notFound().build());
@@ -157,12 +191,13 @@ public class GigController {
         String recipient = (body != null) ? body.get("recipientEmail") : null;
         return gigRepository.findById(id).map(gig -> {
             List<GigItem> items = gigItemRepository.findByGigIdOrdered(id);
-            byte[] pdfBytes = pdfService.generateGigSetlistPdf(gig, items);
-            boolean success = emailService.sendGigSetlistEmail(gig, items, pdfBytes, recipient);
+            byte[] showPdfBytes = pdfService.generateGigShowPdf(gig, items);
+            byte[] studyPdfBytes = pdfService.generateGigStudyPdf(gig, items);
+            boolean success = emailService.sendGigSetlistEmail(gig, items, showPdfBytes, studyPdfBytes, recipient);
             if (success) {
                 return ResponseEntity.ok(Map.of("status", "sent", "recipient", recipient != null ? recipient : "default"));
             } else {
-                return ResponseEntity.internalServerError().body(Map.of("error", "Falha ao enviar e-mail com anexo."));
+                return ResponseEntity.internalServerError().body(Map.of("error", "Falha ao enviar e-mail com anexos."));
             }
         }).orElse(ResponseEntity.notFound().build());
     }

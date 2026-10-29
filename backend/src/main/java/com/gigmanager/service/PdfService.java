@@ -42,14 +42,14 @@ public class PdfService {
     private static final SolidBorder BORDER_THIN = new SolidBorder(COLOR_INK, 0.6f);
 
     /**
-     * Generates a continuous, single-block setlist PDF for gigs.
-     * Ordered strictly by orderIndex (corrida, 1 to N) with Neo-Brutalist styling.
+     * Generates a detailed Study Setlist PDF for rehearsal & study (PDF de Estudo).
+     * Displays mastery level column instead of observations, with full meta info.
      */
-    public byte[] generateGigSetlistPdf(Gig gig, List<GigItem> items) {
+    public byte[] generateGigStudyPdf(Gig gig, List<GigItem> items) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             PdfWriter writer = new PdfWriter(baos);
             PdfDocument pdf = new PdfDocument(writer);
-            
+
             // Register branded footer event handler
             pdf.addEventHandler(PdfDocumentEvent.END_PAGE, new PdfFooterEventHandler(items.size()));
 
@@ -70,7 +70,7 @@ public class PdfService {
                     .setBorder(null)
                     .setPadding(12)
                     .setVerticalAlignment(VerticalAlignment.MIDDLE);
-            leftHeader.add(new Paragraph("CAIXA DE REPERTÓRIO • ESTÚDIO MUSICAL & GIGS")
+            leftHeader.add(new Paragraph("CAIXA DE REPERTÓRIO • MATERIAL DE ESTUDO & ENSAIO")
                     .setFontSize(8)
                     .setBold()
                     .setFontColor(COLOR_LIME)
@@ -87,7 +87,7 @@ public class PdfService {
                     .setPadding(12)
                     .setTextAlignment(TextAlignment.RIGHT)
                     .setVerticalAlignment(VerticalAlignment.MIDDLE);
-            rightHeader.add(new Paragraph("ESCALA DO SHOW")
+            rightHeader.add(new Paragraph("ESCALA DE ESTUDO")
                     .setFontSize(9)
                     .setBold()
                     .setFontColor(COLOR_WHITE));
@@ -106,7 +106,6 @@ public class PdfService {
             metaTable.setMarginTop(6);
             metaTable.setMarginBottom(12);
 
-            // Date
             String dateStr = "Data não informada";
             if (gig.getEventDate() != null) {
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH'h'mm");
@@ -117,14 +116,12 @@ public class PdfService {
             dateCell.add(new Paragraph(dateStr).setFontSize(9).setBold().setFontColor(COLOR_INK));
             metaTable.addCell(dateCell);
 
-            // Venue
             String venueStr = gig.getVenue() != null && !gig.getVenue().isBlank() ? gig.getVenue() : "Local não informado";
             Cell venueCell = new Cell().setBorder(null).setPadding(6);
             venueCell.add(new Paragraph("LOCAL").setFontSize(7).setBold().setFontColor(COLOR_DIM));
             venueCell.add(new Paragraph(venueStr).setFontSize(9).setBold().setFontColor(COLOR_INK));
             metaTable.addCell(venueCell);
 
-            // Representative / Project
             String repStr = gig.getRepresentative() != null ? gig.getRepresentative().getName() : "Repertório Geral";
             Cell repCell = new Cell().setBorder(null).setPadding(6);
             repCell.add(new Paragraph("PROJETO / ARTISTA").setFontSize(7).setBold().setFontColor(COLOR_DIM));
@@ -133,16 +130,16 @@ public class PdfService {
 
             document.add(metaTable);
 
-            // ── Single Continuous Table (Tabela Corrida 1 a N) ──
-            Table table = new Table(UnitValue.createPercentArray(new float[]{6, 42, 24, 12, 16})).useAllAvailableWidth();
+            // ── Single Continuous Study Table ──
+            // Columns: # (6%), Música (38%), Compositor (22%), Tom (14%), Domínio (20%)
+            Table table = new Table(UnitValue.createPercentArray(new float[]{6, 38, 22, 14, 20})).useAllAvailableWidth();
             table.setBorder(BORDER_SOLID);
 
-            // Headers
             table.addHeaderCell(createHeaderCell("#", TextAlignment.CENTER));
             table.addHeaderCell(createHeaderCell("MÚSICA", TextAlignment.LEFT));
             table.addHeaderCell(createHeaderCell("COMPOSITOR", TextAlignment.LEFT));
             table.addHeaderCell(createHeaderCell("TOM", TextAlignment.CENTER));
-            table.addHeaderCell(createHeaderCell("OBSERVAÇÕES", TextAlignment.LEFT));
+            table.addHeaderCell(createHeaderCell("DOMÍNIO", TextAlignment.CENTER));
 
             for (int i = 0; i < sortedItems.size(); i++) {
                 GigItem item = sortedItems.get(i);
@@ -160,7 +157,7 @@ public class PdfService {
                         .add(new Paragraph(String.valueOf(i + 1)).setFontSize(9).setBold().setFontColor(COLOR_INK));
                 table.addCell(indexCell);
 
-                // Title + Genre subtitle
+                // Title + Genre
                 Cell titleCell = new Cell()
                         .setKeepTogether(true)
                         .setBackgroundColor(rowBg)
@@ -184,7 +181,7 @@ public class PdfService {
                         .add(new Paragraph(composer).setFontSize(8.5f).setFontColor(COLOR_INK));
                 table.addCell(compCell);
 
-                // Key (Performance Key or Original Key) - Highlighted badge styling
+                // Key
                 String key = item.getPerformanceKey() != null && !item.getPerformanceKey().isBlank()
                         ? item.getPerformanceKey()
                         : (song.getOriginalKey() != null ? song.getOriginalKey() : "-");
@@ -198,24 +195,314 @@ public class PdfService {
                         .add(new Paragraph(key).setFontSize(10).setBold().setFontColor(COLOR_INK));
                 table.addCell(keyCell);
 
-                // Notes
-                String notes = song.getNotes() != null && !song.getNotes().isBlank() ? song.getNotes() : "-";
-                Cell notesCell = new Cell()
+                // Mastery Level column instead of Observations
+                int mastery = song.getMasteryLevel() != null ? song.getMasteryLevel() : 1;
+                String masteryText;
+                DeviceRgb masteryBg;
+                switch (mastery) {
+                    case 5:
+                        masteryText = "NÍVEL 5 • DOMINADA";
+                        masteryBg = COLOR_LIME;
+                        break;
+                    case 4:
+                        masteryText = "NÍVEL 4 • SEGURA";
+                        masteryBg = COLOR_LAVENDER;
+                        break;
+                    case 3:
+                        masteryText = "NÍVEL 3 • REVISAR";
+                        masteryBg = rowBg;
+                        break;
+                    case 2:
+                        masteryText = "NÍVEL 2 • EM ESTUDO";
+                        masteryBg = rowBg;
+                        break;
+                    default:
+                        masteryText = "NÍVEL 1 • INICIAL";
+                        masteryBg = rowBg;
+                        break;
+                }
+                Cell masteryCell = new Cell()
                         .setKeepTogether(true)
-                        .setBackgroundColor(rowBg)
+                        .setBackgroundColor(masteryBg)
                         .setBorder(BORDER_THIN)
-                        .setPadding(6)
+                        .setPadding(5)
+                        .setTextAlignment(TextAlignment.CENTER)
                         .setVerticalAlignment(VerticalAlignment.MIDDLE)
-                        .add(new Paragraph(notes).setFontSize(8f).setFontColor(COLOR_DIM));
-                table.addCell(notesCell);
+                        .add(new Paragraph(masteryText).setFontSize(8f).setBold().setFontColor(COLOR_INK));
+                table.addCell(masteryCell);
             }
 
             document.add(table);
             document.close();
             return baos.toByteArray();
         } catch (Exception e) {
-            throw new RuntimeException("Failed to generate Gig setlist PDF", e);
+            throw new RuntimeException("Failed to generate Gig study PDF", e);
         }
+    }
+
+    /**
+     * Generates an ultra-clean, high-visibility Stage Setlist PDF (PDF de Show).
+     * Contains ONLY: Number (#), Song Title, and Key (Tom).
+     * Specifically designed to ALWAYS fit on a SINGLE PAGE:
+     * - 1 Column if <= 16 songs (large spacious fonts)
+     * - 2 Balanced Columns if > 16 songs (dynamically scaled, single-sheet guaranteed for musicians on stage)
+     */
+    public byte[] generateGigShowPdf(Gig gig, List<GigItem> items) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            PdfWriter writer = new PdfWriter(baos);
+            PdfDocument pdf = new PdfDocument(writer);
+
+            Document document = new Document(pdf);
+            // Tight margins to guarantee single page
+            document.setMargins(18, 22, 18, 22);
+
+            List<GigItem> sortedItems = items.stream()
+                    .sorted(Comparator.comparing(item -> item.getOrderIndex() != null ? item.getOrderIndex() : 0))
+                    .collect(Collectors.toList());
+
+            int total = sortedItems.size();
+
+            // ── Compact Stage Header Banner ──
+            Table headerTable = new Table(UnitValue.createPercentArray(new float[]{78, 22})).useAllAvailableWidth();
+            headerTable.setBorder(BORDER_THICK);
+            headerTable.setBackgroundColor(COLOR_INK);
+
+            Cell leftHeader = new Cell()
+                    .setBorder(null)
+                    .setPadding(8)
+                    .setPaddingLeft(10)
+                    .setVerticalAlignment(VerticalAlignment.MIDDLE);
+            leftHeader.add(new Paragraph("CAIXA DE REPERTÓRIO • SETLIST DE PALCO")
+                    .setFontSize(7.5f)
+                    .setBold()
+                    .setFontColor(COLOR_LIME)
+                    .setMarginBottom(1));
+            leftHeader.add(new Paragraph(gig.getTitle().toUpperCase())
+                    .setFontSize(15)
+                    .setBold()
+                    .setFontColor(COLOR_WHITE)
+                    .setMargin(0));
+
+            StringBuilder metaSb = new StringBuilder();
+            if (gig.getEventDate() != null) {
+                metaSb.append(gig.getEventDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH'h'mm")));
+            }
+            if (gig.getVenue() != null && !gig.getVenue().isBlank()) {
+                if (metaSb.length() > 0) metaSb.append(" • ");
+                metaSb.append(gig.getVenue());
+            }
+            if (gig.getRepresentative() != null) {
+                if (metaSb.length() > 0) metaSb.append(" • ");
+                metaSb.append(gig.getRepresentative().getName());
+            }
+            if (metaSb.length() > 0) {
+                leftHeader.add(new Paragraph(metaSb.toString())
+                        .setFontSize(7.5f)
+                        .setFontColor(new DeviceRgb(220, 220, 225))
+                        .setMarginTop(1)
+                        .setMarginBottom(0));
+            }
+            headerTable.addCell(leftHeader);
+
+            Cell rightHeader = new Cell()
+                    .setBorder(null)
+                    .setPadding(8)
+                    .setPaddingRight(10)
+                    .setTextAlignment(TextAlignment.RIGHT)
+                    .setVerticalAlignment(VerticalAlignment.MIDDLE);
+            rightHeader.add(new Paragraph("ESCALA DO SHOW")
+                    .setFontSize(8)
+                    .setBold()
+                    .setFontColor(COLOR_WHITE)
+                    .setMarginBottom(1));
+            rightHeader.add(new Paragraph(total + " FAIXAS")
+                    .setFontSize(12)
+                    .setBold()
+                    .setFontColor(COLOR_LIME)
+                    .setMargin(0));
+            headerTable.addCell(rightHeader);
+
+            document.add(headerTable);
+
+            if (total <= 16) {
+                // ── 1 COLUMN LAYOUT (Large readable fonts) ──
+                Table table = new Table(UnitValue.createPercentArray(new float[]{8, 74, 18})).useAllAvailableWidth();
+                table.setBorder(BORDER_SOLID);
+                table.setMarginTop(8);
+
+                table.addHeaderCell(createHeaderCell("#", TextAlignment.CENTER, 9f, 5f));
+                table.addHeaderCell(createHeaderCell("MÚSICA", TextAlignment.LEFT, 9f, 5f));
+                table.addHeaderCell(createHeaderCell("TOM", TextAlignment.CENTER, 9f, 5f));
+
+                float rowPadding = total <= 10 ? 7.5f : 5.5f;
+                float titleFontSize = total <= 10 ? 13f : 11.5f;
+                float keyFontSize = total <= 10 ? 14f : 12.5f;
+
+                for (int i = 0; i < total; i++) {
+                    GigItem item = sortedItems.get(i);
+                    Song song = item.getSong();
+                    DeviceRgb rowBg = (i % 2 == 0) ? COLOR_WHITE : COLOR_MUTED;
+
+                    // Index
+                    Cell indexCell = new Cell()
+                            .setKeepTogether(true)
+                            .setBackgroundColor(rowBg)
+                            .setBorder(BORDER_THIN)
+                            .setPadding(rowPadding)
+                            .setTextAlignment(TextAlignment.CENTER)
+                            .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                            .add(new Paragraph(String.format("%02d", i + 1)).setFontSize(10f).setBold().setFontColor(COLOR_INK).setMargin(0));
+                    table.addCell(indexCell);
+
+                    // Title
+                    Cell titleCell = new Cell()
+                            .setKeepTogether(true)
+                            .setBackgroundColor(rowBg)
+                            .setBorder(BORDER_THIN)
+                            .setPadding(rowPadding)
+                            .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                            .add(new Paragraph(song.getTitle().toUpperCase()).setFontSize(titleFontSize).setBold().setFontColor(COLOR_INK).setMargin(0));
+                    table.addCell(titleCell);
+
+                    // Key (Big, bold, high contrast)
+                    String key = item.getPerformanceKey() != null && !item.getPerformanceKey().isBlank()
+                            ? item.getPerformanceKey()
+                            : (song.getOriginalKey() != null ? song.getOriginalKey() : "-");
+                    Cell keyCell = new Cell()
+                            .setKeepTogether(true)
+                            .setBackgroundColor(COLOR_LAVENDER)
+                            .setBorder(BORDER_THIN)
+                            .setPadding(rowPadding - 1)
+                            .setTextAlignment(TextAlignment.CENTER)
+                            .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                            .add(new Paragraph(key).setFontSize(keyFontSize).setBold().setFontColor(COLOR_INK).setMargin(0));
+                    table.addCell(keyCell);
+                }
+
+                document.add(table);
+            } else {
+                // ── 2 COLUMNS BALANCED LAYOUT (Guaranteed 1 page) ──
+                int half = (total + 1) / 2;
+
+                // 7 columns: [#L, MúsL, TomL, Gap, #R, MúsR, TomR]
+                Table table = new Table(UnitValue.createPercentArray(new float[]{5.5f, 32.5f, 9.5f, 5f, 5.5f, 32.5f, 9.5f})).useAllAvailableWidth();
+                table.setBorder(BORDER_SOLID);
+                table.setMarginTop(8);
+
+                // Headers
+                table.addHeaderCell(createHeaderCell("#", TextAlignment.CENTER, 8f, 4f));
+                table.addHeaderCell(createHeaderCell("MÚSICA", TextAlignment.LEFT, 8f, 4f));
+                table.addHeaderCell(createHeaderCell("TOM", TextAlignment.CENTER, 8f, 4f));
+
+                // Gap Header
+                table.addHeaderCell(new Cell().setBackgroundColor(COLOR_MUTED).setBorder(BORDER_SOLID).setPadding(0));
+
+                table.addHeaderCell(createHeaderCell("#", TextAlignment.CENTER, 8f, 4f));
+                table.addHeaderCell(createHeaderCell("MÚSICA", TextAlignment.LEFT, 8f, 4f));
+                table.addHeaderCell(createHeaderCell("TOM", TextAlignment.CENTER, 8f, 4f));
+
+                float titleFont;
+                float keyFont;
+                float pad;
+                if (half <= 18) {
+                    titleFont = 10.5f;
+                    keyFont = 11.0f;
+                    pad = 4.2f;
+                } else if (half <= 24) {
+                    titleFont = 9.5f;
+                    keyFont = 10.0f;
+                    pad = 3.2f;
+                } else if (half <= 30) {
+                    titleFont = 8.5f;
+                    keyFont = 9.0f;
+                    pad = 2.2f;
+                } else {
+                    titleFont = 7.8f;
+                    keyFont = 8.2f;
+                    pad = 1.2f;
+                }
+
+                for (int r = 0; r < half; r++) {
+                    DeviceRgb rowBg = (r % 2 == 0) ? COLOR_WHITE : COLOR_MUTED;
+                    GigItem leftItem = sortedItems.get(r);
+                    Song leftSong = leftItem.getSong();
+                    String leftKey = leftItem.getPerformanceKey() != null && !leftItem.getPerformanceKey().isBlank()
+                            ? leftItem.getPerformanceKey()
+                            : (leftSong.getOriginalKey() != null ? leftSong.getOriginalKey() : "-");
+
+                    // Left Index
+                    table.addCell(new Cell().setKeepTogether(true).setBackgroundColor(rowBg).setBorder(BORDER_THIN).setPadding(pad)
+                            .setTextAlignment(TextAlignment.CENTER).setVerticalAlignment(VerticalAlignment.MIDDLE)
+                            .add(new Paragraph(String.format("%02d", r + 1)).setFontSize(titleFont - 1).setBold().setFontColor(COLOR_INK).setMargin(0)));
+
+                    // Left Title
+                    table.addCell(new Cell().setKeepTogether(true).setBackgroundColor(rowBg).setBorder(BORDER_THIN).setPadding(pad)
+                            .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                            .add(new Paragraph(leftSong.getTitle().toUpperCase()).setFontSize(titleFont).setBold().setFontColor(COLOR_INK).setMargin(0)));
+
+                    // Left Key
+                    table.addCell(new Cell().setKeepTogether(true).setBackgroundColor(COLOR_LAVENDER).setBorder(BORDER_THIN).setPadding(pad - 0.5f)
+                            .setTextAlignment(TextAlignment.CENTER).setVerticalAlignment(VerticalAlignment.MIDDLE)
+                            .add(new Paragraph(leftKey).setFontSize(keyFont).setBold().setFontColor(COLOR_INK).setMargin(0)));
+
+                    // Center Gap / Divider
+                    table.addCell(new Cell().setBackgroundColor(COLOR_MUTED).setBorder(BORDER_THIN).setPadding(0));
+
+                    // Right Item
+                    int rightIdx = r + half;
+                    if (rightIdx < total) {
+                        GigItem rightItem = sortedItems.get(rightIdx);
+                        Song rightSong = rightItem.getSong();
+                        String rightKey = rightItem.getPerformanceKey() != null && !rightItem.getPerformanceKey().isBlank()
+                                ? rightItem.getPerformanceKey()
+                                : (rightSong.getOriginalKey() != null ? rightSong.getOriginalKey() : "-");
+
+                        // Right Index
+                        table.addCell(new Cell().setKeepTogether(true).setBackgroundColor(rowBg).setBorder(BORDER_THIN).setPadding(pad)
+                                .setTextAlignment(TextAlignment.CENTER).setVerticalAlignment(VerticalAlignment.MIDDLE)
+                                .add(new Paragraph(String.format("%02d", rightIdx + 1)).setFontSize(titleFont - 1).setBold().setFontColor(COLOR_INK).setMargin(0)));
+
+                        // Right Title
+                        table.addCell(new Cell().setKeepTogether(true).setBackgroundColor(rowBg).setBorder(BORDER_THIN).setPadding(pad)
+                                .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                                .add(new Paragraph(rightSong.getTitle().toUpperCase()).setFontSize(titleFont).setBold().setFontColor(COLOR_INK).setMargin(0)));
+
+                        // Right Key
+                        table.addCell(new Cell().setKeepTogether(true).setBackgroundColor(COLOR_LAVENDER).setBorder(BORDER_THIN).setPadding(pad - 0.5f)
+                                .setTextAlignment(TextAlignment.CENTER).setVerticalAlignment(VerticalAlignment.MIDDLE)
+                                .add(new Paragraph(rightKey).setFontSize(keyFont).setBold().setFontColor(COLOR_INK).setMargin(0)));
+                    } else {
+                        // Empty cells to finish the row
+                        table.addCell(new Cell().setBackgroundColor(rowBg).setBorder(BORDER_THIN).setPadding(pad));
+                        table.addCell(new Cell().setBackgroundColor(rowBg).setBorder(BORDER_THIN).setPadding(pad));
+                        table.addCell(new Cell().setBackgroundColor(rowBg).setBorder(BORDER_THIN).setPadding(pad));
+                    }
+                }
+
+                document.add(table);
+            }
+
+            // ── Minimal Single-Page Bottom Footer ──
+            Paragraph footer = new Paragraph("CAIXA DE REPERTÓRIO • SETLIST DE PALCO • IMPRESSÃO PARA MÚSICOS")
+                    .setFontSize(7)
+                    .setBold()
+                    .setFontColor(COLOR_DIM)
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setMarginTop(8);
+            document.add(footer);
+
+            document.close();
+            return baos.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate Gig Show PDF", e);
+        }
+    }
+
+    /**
+     * Backward-compatible delegation.
+     */
+    public byte[] generateGigSetlistPdf(Gig gig, List<GigItem> items) {
+        return generateGigShowPdf(gig, items);
     }
 
     /**
@@ -496,12 +783,16 @@ public class PdfService {
     }
 
     private Cell createHeaderCell(String text, TextAlignment alignment) {
+        return createHeaderCell(text, alignment, 8.5f, 6f);
+    }
+
+    private Cell createHeaderCell(String text, TextAlignment alignment, float fontSize, float padding) {
         return new Cell()
                 .setBackgroundColor(COLOR_INK)
                 .setBorder(BORDER_SOLID)
-                .setPadding(6)
+                .setPadding(padding)
                 .setTextAlignment(alignment)
                 .setVerticalAlignment(VerticalAlignment.MIDDLE)
-                .add(new Paragraph(text).setFontSize(8.5f).setBold().setFontColor(COLOR_WHITE));
+                .add(new Paragraph(text).setFontSize(fontSize).setBold().setFontColor(COLOR_WHITE).setMargin(0));
     }
 }
