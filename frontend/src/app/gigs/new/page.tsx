@@ -6,13 +6,14 @@ import {
   Plus, 
   X, 
   Save, 
-  Mail, 
   ArrowUp, 
   ArrowDown, 
   Check, 
   Sparkles,
   Music2,
-  FileDown
+  FileDown,
+  FileText,
+  Loader2
 } from "lucide-react";
 import { StickerPillButton } from "@/components/StickerPillButton";
 import { useRouter } from "next/navigation";
@@ -50,6 +51,7 @@ export default function GigConstructor() {
   const [selectedRepId, setSelectedRepId] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [savedGigId, setSavedGigId] = useState<string | null>(null);
+  const [downloadingType, setDownloadingType] = useState<"show" | "study" | null>(null);
 
   // Single continuous Setlist (sem blocos)
   const [setlist, setSetlist] = useState<SetlistItem[]>([]);
@@ -57,11 +59,6 @@ export default function GigConstructor() {
 
   // Toast notification state
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-
-  // Email modal state
-  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
-  const [emailInput, setEmailInput] = useState(currentUser?.email || "jorgesoares2997@gmail.com");
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   useEffect(() => {
     if (currentUser?.role === "ADMIN") {
@@ -147,12 +144,13 @@ export default function GigConstructor() {
         venue: gigVenue || null,
         eventDate: gigDate ? new Date(gigDate).toISOString().slice(0, 19) : null,
         representativeId: selectedRepId || null,
+        recipientEmail: currentUser?.email || "jorgesoares2997@gmail.com",
         items,
       };
 
       const created = await addGig(body);
       setSavedGigId(created.id);
-      showToast("Show salvo com sucesso!", "success");
+      showToast("Show salvo! Os PDFs (Show e Estudo) foram enviados automaticamente para o seu e-mail.", "success");
     } catch {
       showToast("Erro ao salvar o show. Tente novamente.", "error");
     } finally {
@@ -160,49 +158,55 @@ export default function GigConstructor() {
     }
   };
 
-  const sendEmailWithPdf = async () => {
-    if (!savedGigId) {
-      showToast("Salve o show antes de enviar o e-mail.", "error");
-      return;
-    }
+  const downloadPdf = async (type: "show" | "study") => {
+    if (!savedGigId) return;
+    if (downloadingType) return;
 
-    if (!emailInput.trim()) {
-      showToast("Informe o e-mail de destino.", "error");
-      return;
-    }
+    setDownloadingType(type);
+    showToast(`Gerando PDF de ${type === "study" ? "Estudo" : "Show"}...`, "success");
 
-    setIsSendingEmail(true);
     try {
       const token = useAppStore.getState().currentUser?.token;
-      const res = await fetch(`${API_URL}/api/gigs/${savedGigId}/send-email`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ recipientEmail: emailInput.trim() }),
-      });
+      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
-      if (res.ok) {
-        setIsEmailModalOpen(false);
-        showToast(`Escala enviada com PDF em anexo para ${emailInput}!`, "success");
-      } else {
-        showToast("Erro ao enviar e-mail. Verifique a configuração.", "error");
+      // 1. Try dedicated path (/api/gigs/{id}/pdf/{type})
+      let res = await fetch(`${API_URL}/api/gigs/${savedGigId}/pdf/${type}`, { headers });
+
+      // 2. Fallback to query param (/api/gigs/{id}/pdf?type={type}) if 404
+      if (!res.ok && res.status === 404) {
+        res = await fetch(`${API_URL}/api/gigs/${savedGigId}/pdf?type=${type}`, { headers });
       }
-    } catch {
-      showToast("Falha de conexão ao enviar e-mail.", "error");
+
+      // 3. Fallback to legacy endpoint if still 404
+      if (!res.ok && res.status === 404) {
+        res = await fetch(`${API_URL}/api/gigs/${savedGigId}/pdf`, { headers });
+      }
+
+      if (!res.ok) {
+        throw new Error(`Servidor retornou status ${res.status}`);
+      }
+
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `setlist_${type === "study" ? "estudo" : "show"}_${gigTitle.trim().replace(/\s+/g, "_")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+
+      showToast("PDF baixado com sucesso!", "success");
+    } catch (err) {
+      console.error("Erro ao baixar PDF:", err);
+      showToast("Não foi possível baixar o PDF. Verifique se o servidor está ativo.", "error");
     } finally {
-      setIsSendingEmail(false);
+      setDownloadingType(null);
     }
   };
 
-  const downloadPdf = () => {
-    if (!savedGigId) return;
-    const a = document.createElement("a");
-    a.href = `${API_URL}/api/gigs/${savedGigId}/pdf`;
-    a.download = `setlist_${gigTitle.replace(/\s+/g, "_")}.pdf`;
-    a.click();
-  };
+  const downloadShowPdf = () => downloadPdf("show");
+  const downloadStudyPdf = () => downloadPdf("study");
 
   return (
     <div className="relative flex flex-col lg:flex-row gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700 mt-4 min-h-[85vh]">
@@ -407,20 +411,32 @@ export default function GigConstructor() {
               <>
                 <button
                   type="button"
-                  onClick={() => setIsEmailModalOpen(true)}
-                  className="flex items-center gap-2 bg-ink text-surface border-2 border-ink px-4 py-2.5 rounded-xl font-bold text-xs uppercase hover:-translate-y-0.5 transition-transform shadow-[2px_2px_0px_#161616] font-[family-name:var(--font-dm-sans)]"
+                  disabled={downloadingType !== null}
+                  onClick={downloadShowPdf}
+                  className="flex items-center gap-2 bg-accent-lime text-ink border-2 border-ink px-4 py-2.5 rounded-xl font-black text-xs uppercase hover:-translate-y-0.5 active:translate-y-0 transition-transform shadow-[3px_3px_0px_#161616] font-[family-name:var(--font-dm-sans)] disabled:opacity-60"
+                  title="PDF ultra-enxuto para o palco em 1 página única"
                 >
-                  <Mail className="w-4 h-4 text-accent-lime" />
-                  <span>Enviar por E-mail</span>
+                  {downloadingType === "show" ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <FileDown className="w-4 h-4" />
+                  )}
+                  <span>Baixar PDF de Show (Palco)</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={downloadPdf}
-                  className="flex items-center gap-2 bg-muted text-ink border-2 border-ink px-4 py-2.5 rounded-xl font-bold text-xs uppercase hover:-translate-y-0.5 transition-transform shadow-[2px_2px_0px_#161616] font-[family-name:var(--font-dm-sans)]"
+                  disabled={downloadingType !== null}
+                  onClick={downloadStudyPdf}
+                  className="flex items-center gap-2 bg-surface text-ink border-2 border-ink px-4 py-2.5 rounded-xl font-black text-xs uppercase hover:-translate-y-0.5 active:translate-y-0 transition-transform shadow-[3px_3px_0px_#161616] font-[family-name:var(--font-dm-sans)] disabled:opacity-60"
+                  title="PDF detalhado com nível de domínio para estudo"
                 >
-                  <FileDown className="w-4 h-4" />
-                  <span>Baixar PDF</span>
+                  {downloadingType === "study" ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-accent-lavender" />
+                  ) : (
+                    <FileText className="w-4 h-4 text-accent-lavender" />
+                  )}
+                  <span>Baixar PDF de Estudo</span>
                 </button>
               </>
             )}
@@ -528,80 +544,6 @@ export default function GigConstructor() {
           </div>
         </div>
       </div>
-
-      {/* Email Sender Modal */}
-      <AnimatePresence>
-        {isEmailModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/70 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-surface border-3 border-ink rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-[6px_6px_0px_#161616] space-y-5"
-            >
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-accent-lime border-2 border-ink flex items-center justify-center shadow-[2px_2px_0px_#161616]">
-                    <Mail className="w-5 h-5 text-ink" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black uppercase tracking-tight font-[family-name:var(--font-oswald)]">
-                      Enviar Escala por E-mail
-                    </h3>
-                    <p className="text-xs text-dim">Com o PDF diagramado em anexo</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsEmailModalOpen(false)}
-                  className="p-1.5 rounded-lg border border-ink hover:bg-muted transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="p-3.5 bg-canvas border-2 border-ink rounded-xl text-xs space-y-1">
-                <p className="font-bold text-ink">Show: <span className="font-medium">{gigTitle}</span></p>
-                <p className="font-bold text-ink">Faixas: <span className="font-medium">{setlist.length} músicas em bloco único</span></p>
-                <p className="text-dim mt-1">
-                  📎 O anexo conterá o arquivo <b>setlist_{gigTitle.replace(/\s+/g, "_")}.pdf</b> com a identidade visual do projeto.
-                </p>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-dim block mb-1.5">
-                  E-mail de Destino
-                </label>
-                <input
-                  type="email"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  placeholder="exemplo@email.com"
-                  className="w-full border-2 border-ink rounded-xl py-2.5 px-3.5 font-medium text-sm shadow-[2px_2px_0px_#161616] focus:outline-none"
-                />
-              </div>
-
-              <div className="flex gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsEmailModalOpen(false)}
-                  className="flex-1 py-2.5 border-2 border-ink rounded-xl font-bold text-xs uppercase hover:bg-muted transition-colors font-[family-name:var(--font-dm-sans)]"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  disabled={isSendingEmail}
-                  onClick={sendEmailWithPdf}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-accent-lime border-2 border-ink rounded-xl font-black text-xs uppercase shadow-[2px_2px_0px_#161616] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-60 font-[family-name:var(--font-dm-sans)]"
-                >
-                  <Mail className="w-4 h-4" />
-                  <span>{isSendingEmail ? "Enviando..." : "Enviar Agora"}</span>
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
     </div>
   );

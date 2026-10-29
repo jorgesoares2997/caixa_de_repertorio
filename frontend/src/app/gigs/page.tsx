@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { StickerPillButton } from "@/components/StickerPillButton";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, MapPin, Mic2, FileDown, Mail, Plus, X, Check, RefreshCw } from "lucide-react";
+import { Calendar, MapPin, Mic2, FileDown, FileText, Mail, Plus, X, Check, RefreshCw, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useAppStore, Gig } from "@/lib/store";
 import { getApiBaseUrl } from "@/lib/utils";
@@ -24,6 +24,7 @@ export default function GigsPage() {
   const [selectedGigForEmail, setSelectedGigForEmail] = useState<Gig | null>(null);
   const [recipientEmail, setRecipientEmail] = useState(currentUser?.email || "jorgesoares2997@gmail.com");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
 
   useEffect(() => {
     fetchGigs();
@@ -68,11 +69,50 @@ export default function GigsPage() {
     }
   };
 
-  const downloadPdf = (id: string, title: string) => {
-    const a = document.createElement("a");
-    a.href = `${API_URL}/api/gigs/${id}/pdf`;
-    a.download = `setlist_${title.replace(/\s+/g, "_")}.pdf`;
-    a.click();
+  const downloadPdf = async (id: string, title: string, type: "show" | "study" = "show") => {
+    const key = `${id}-${type}`;
+    if (downloadingKey) return;
+    setDownloadingKey(key);
+    showToast(`Gerando PDF de ${type === "study" ? "Estudo" : "Show"}...`, "success");
+
+    try {
+      const token = useAppStore.getState().currentUser?.token;
+      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
+      // 1. Try dedicated path (/api/gigs/{id}/pdf/{type})
+      let res = await fetch(`${API_URL}/api/gigs/${id}/pdf/${type}`, { headers });
+
+      // 2. Fallback to query param (/api/gigs/{id}/pdf?type={type}) if 404
+      if (!res.ok && res.status === 404) {
+        res = await fetch(`${API_URL}/api/gigs/${id}/pdf?type=${type}`, { headers });
+      }
+
+      // 3. Fallback to legacy endpoint if still 404
+      if (!res.ok && res.status === 404) {
+        res = await fetch(`${API_URL}/api/gigs/${id}/pdf`, { headers });
+      }
+
+      if (!res.ok) {
+        throw new Error(`Servidor retornou status ${res.status}`);
+      }
+
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `setlist_${type === "study" ? "estudo" : "show"}_${title.trim().replace(/\s+/g, "_")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+
+      showToast("PDF baixado com sucesso!", "success");
+    } catch (err) {
+      console.error("Erro ao baixar PDF:", err);
+      showToast("Não foi possível baixar o PDF. Verifique se o servidor está ativo.", "error");
+    } finally {
+      setDownloadingKey(null);
+    }
   };
 
   const formatDate = (d: string) => {
@@ -210,12 +250,32 @@ export default function GigsPage() {
                 )}
               </div>
 
-              <div className="flex gap-3 p-4 bg-surface">
+              <div className="flex flex-wrap sm:flex-nowrap gap-2 p-3 bg-surface border-t-2 border-ink">
                 <button
-                  onClick={() => downloadPdf(gig.id, gig.title)}
-                  className="flex-1 flex items-center justify-center gap-2 bg-muted border-2 border-ink py-3 rounded-xl font-bold text-sm hover:-translate-y-0.5 transition-transform shadow-[3px_3px_0px_#161616] hover:shadow-[0px_0px_0px_#161616] font-[family-name:var(--font-dm-sans)]"
+                  disabled={downloadingKey !== null}
+                  onClick={() => downloadPdf(gig.id, gig.title, "show")}
+                  title="Baixar PDF de Show (1 página única para palco)"
+                  className="flex-1 min-w-[105px] flex items-center justify-center gap-1.5 bg-accent-lime text-ink border-2 border-ink py-2.5 rounded-xl font-black text-xs uppercase hover:-translate-y-0.5 active:translate-y-0 transition-transform shadow-[2px_2px_0px_#161616] font-[family-name:var(--font-dm-sans)] disabled:opacity-60"
                 >
-                  <FileDown className="w-4 h-4" /> PDF
+                  {downloadingKey === `${gig.id}-show` ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <FileDown className="w-3.5 h-3.5" />
+                  )}
+                  <span>PDF Show</span>
+                </button>
+                <button
+                  disabled={downloadingKey !== null}
+                  onClick={() => downloadPdf(gig.id, gig.title, "study")}
+                  title="Baixar PDF de Estudo (com nível de domínio)"
+                  className="flex-1 min-w-[105px] flex items-center justify-center gap-1.5 bg-surface text-ink border-2 border-ink py-2.5 rounded-xl font-bold text-xs uppercase hover:-translate-y-0.5 active:translate-y-0 transition-transform shadow-[2px_2px_0px_#161616] font-[family-name:var(--font-dm-sans)] disabled:opacity-60"
+                >
+                  {downloadingKey === `${gig.id}-study` ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-accent-lavender" />
+                  ) : (
+                    <FileText className="w-3.5 h-3.5 text-accent-lavender" />
+                  )}
+                  <span>PDF Estudo</span>
                 </button>
                 {isAdmin && (
                   <button
@@ -223,10 +283,11 @@ export default function GigsPage() {
                       setSelectedGigForEmail(gig);
                       setRecipientEmail(currentUser?.email || "jorgesoares2997@gmail.com");
                     }}
-                    className="flex-1 flex items-center justify-center gap-2 bg-accent-lime border-2 border-ink py-3 rounded-xl font-bold text-sm hover:-translate-y-0.5 transition-transform shadow-[3px_3px_0px_#161616] hover:shadow-[0px_0px_0px_#161616] font-[family-name:var(--font-dm-sans)]"
+                    title="Enviar ambos os PDFs por e-mail"
+                    className="flex-none px-3.5 flex items-center justify-center gap-1.5 bg-ink text-surface border-2 border-ink py-2.5 rounded-xl font-bold text-xs uppercase hover:-translate-y-0.5 active:translate-y-0 transition-transform shadow-[2px_2px_0px_#161616] font-[family-name:var(--font-dm-sans)]"
                   >
-                    <Mail className="w-4 h-4" />
-                    <span>E-mail</span>
+                    <Mail className="w-3.5 h-3.5 text-accent-lime" />
+                    <span className="hidden sm:inline">E-mail</span>
                   </button>
                 )}
               </div>
@@ -269,7 +330,7 @@ export default function GigsPage() {
                 <p className="font-bold text-ink">Show: <span className="font-medium">{selectedGigForEmail.title}</span></p>
                 <p className="font-bold text-ink">Faixas: <span className="font-medium">{selectedGigForEmail.items.length} músicas</span></p>
                 <p className="text-dim mt-1">
-                  📎 O anexo conterá o arquivo <b>setlist_{selectedGigForEmail.title.replace(/\s+/g, "_")}.pdf</b>.
+                  📎 O anexo conterá 2 arquivos: o <b>PDF de Show</b> (1 página para palco) e o <b>PDF de Estudo</b> (com nível de domínio).
                 </p>
               </div>
 
